@@ -115,8 +115,23 @@ class _PluginRenderSurfaceWebViewState
   @override
   Future<bool> goBackIfPossible() async {
     final controller = _controller;
-    if (controller == null) return false;
+    if (!mounted || controller == null) return false;
+    if (_pageReady) {
+      try {
+        // 插件 SPA 的浮层和页面切换未必写入浏览历史。插件取消事件表示
+        // 已处理这次返回；未监听、未消费或执行失败时继续检查 WebView 历史。
+        final consumed = await controller.evaluateJavascript(
+          source:
+              "!document.dispatchEvent(new Event('songloft-back', {cancelable: true}))",
+        );
+        if (consumed == true) return true;
+      } catch (error) {
+        debugPrint('Plugin back event failed: $error');
+      }
+    }
+    if (!mounted || _controller != controller) return false;
     if (!await controller.canGoBack()) return false;
+    if (!mounted || _controller != controller) return false;
     await controller.goBack();
     return true;
   }

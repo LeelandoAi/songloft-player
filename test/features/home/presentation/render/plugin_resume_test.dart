@@ -6,11 +6,86 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:songloft_flutter/core/theme/app_theme.dart';
 import 'package:songloft_flutter/features/home/presentation/render/plugin_color_scheme.dart';
+import 'package:songloft_flutter/features/home/presentation/render/plugin_render_controller.dart';
 import 'package:songloft_flutter/features/home/presentation/render/plugin_render_surface_webview.dart';
 import 'package:songloft_flutter/features/player/domain/player_state.dart';
 import 'package:songloft_flutter/features/player/presentation/providers/player_provider.dart';
 
 void main() {
+  testWidgets(
+    'plugin back is consulted before browser history with safe fallback',
+    (tester) async {
+      final previousPlatform = InAppWebViewPlatform.instance;
+      final platform = _FakeWebViewPlatform();
+      InAppWebViewPlatform.instance = platform;
+      addTearDown(() {
+        if (previousPlatform != null) {
+          InAppWebViewPlatform.instance = previousPlatform;
+        }
+      });
+      late PluginRenderController renderController;
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [playerStateProvider.overrideWith(_FakePlayer.new)],
+          child: MaterialApp(
+            home: PluginRenderSurfaceWebView(
+              url: 'http://localhost/api/v1/jsplugin/miot/',
+              theme: 'light',
+              onLoadStart: () {},
+              onLoadStop: () {},
+              onError: (_) {},
+              onControllerReady: (controller) => renderController = controller,
+            ),
+          ),
+        ),
+      );
+      final webView = platform.webView!;
+      final controller = _FakeController();
+      final appController = InAppWebViewController.fromPlatform(
+        platform: controller,
+      );
+      webView.params.onWebViewCreated!(appController);
+
+      // Loading pages only consult history; no event dispatch into an unready SPA.
+      expect(await renderController.goBackIfPossible(), false);
+      expect(controller.scripts, isEmpty);
+      webView.params.onLoadStop!(appController, WebUri('http://localhost'));
+      controller.scripts.clear();
+      controller.historyChecks = 0;
+
+      controller.backResult = true;
+      controller.hasHistory = true;
+      expect(await renderController.goBackIfPossible(), true);
+      expect(
+        controller.scripts.single,
+        contains("new Event('songloft-back', {cancelable: true})"),
+      );
+      expect(controller.historyChecks, 0);
+      expect(controller.historyBacks, 0);
+
+      for (final result in [false, null, 'true']) {
+        controller.backResult = result;
+        expect(await renderController.goBackIfPossible(), true);
+      }
+      expect(controller.historyBacks, 3);
+      controller.hasHistory = false;
+      expect(await renderController.goBackIfPossible(), false);
+
+      controller.backError = StateError('page is reloading');
+      controller.hasHistory = true;
+      expect(await renderController.goBackIfPossible(), true);
+      expect(controller.historyBacks, 4);
+      controller.hasHistory = false;
+      expect(await renderController.goBackIfPossible(), false);
+
+      controller.backError = null;
+      await tester.pumpWidget(const SizedBox.shrink());
+      final checks = controller.historyChecks;
+      expect(await renderController.goBackIfPossible(), false);
+      expect(controller.historyChecks, checks);
+    },
+  );
+
   testWidgets('theme dependency changes push current material without reload', (
     tester,
   ) async {
@@ -190,6 +265,11 @@ class _FakeController extends PlatformInAppWebViewController {
       );
 
   final scripts = <String>[];
+  Object? backResult;
+  Object? backError;
+  bool hasHistory = false;
+  int historyChecks = 0;
+  int historyBacks = 0;
 
   @override
   Future<dynamic> evaluateJavascript({
@@ -197,7 +277,22 @@ class _FakeController extends PlatformInAppWebViewController {
     ContentWorld? contentWorld,
   }) async {
     scripts.add(source);
+    if (source.contains("new Event('songloft-back'")) {
+      if (backError != null) throw backError!;
+      return backResult;
+    }
     return null;
+  }
+
+  @override
+  Future<bool> canGoBack() async {
+    historyChecks += 1;
+    return hasHistory;
+  }
+
+  @override
+  Future<void> goBack() async {
+    historyBacks += 1;
   }
 
   @override
