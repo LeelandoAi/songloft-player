@@ -6,9 +6,11 @@ import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/responsive.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../domain/github_plugin.dart';
+import '../../data/github_discovery_api.dart';
 import '../providers/github_discovery_provider.dart';
 import '../providers/jsplugin_provider.dart';
 import '../widgets/github_plugin_detail.dart';
+import '../widgets/github_discovery_token_dialog.dart';
 
 class GithubDiscoveryPage extends ConsumerStatefulWidget {
   const GithubDiscoveryPage({super.key});
@@ -86,6 +88,15 @@ class _GithubDiscoveryPageState extends ConsumerState<GithubDiscoveryPage> {
           },
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.key),
+            tooltip: l10n.githubDiscoveryTokenTitle,
+            onPressed:
+                () => showDialog<void>(
+                  context: context,
+                  builder: (_) => const GithubDiscoveryTokenDialog(),
+                ),
+          ),
           IconButton(
             icon: const Icon(Icons.info_outline),
             tooltip: l10n.githubDiscoveryHelpTitle,
@@ -218,6 +229,10 @@ class _GithubDiscoveryPageState extends ConsumerState<GithubDiscoveryPage> {
                   Text(
                     state.limited
                         ? l10n.githubDiscoveryRateLimited
+                        : state.error is GithubDiscoveryException &&
+                            (state.error as GithubDiscoveryException).reason ==
+                                DiscoveryFailure.invalidToken
+                        ? l10n.githubDiscoveryTokenInvalid
                         : l10n.githubDiscoveryLoadFailed,
                     style: TextStyle(color: colors.error),
                   ),

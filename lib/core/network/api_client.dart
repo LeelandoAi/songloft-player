@@ -47,19 +47,53 @@ Dio createDio({
 
   // 添加日志拦截器（仅在调试模式下）
   assert(() {
-    dio.interceptors.add(
-      LogInterceptor(
+    dio.interceptors.add(_SettingsLogInterceptor());
+    return true;
+  }());
+
+  return dio;
+}
+
+// This endpoint intentionally returns a credential; keep its payload out of debug logs.
+class _SettingsLogInterceptor extends LogInterceptor {
+  _SettingsLogInterceptor()
+    : super(
         requestHeader: true,
         requestBody: true,
         responseHeader: false,
         responseBody: true,
         error: true,
-      ),
-    );
-    return true;
-  }());
+      );
 
-  return dio;
+  bool _sensitive(RequestOptions options) =>
+      options.uri.path.endsWith('/settings/github-discovery-token');
+
+  @override
+  void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
+    if (_sensitive(options)) {
+      handler.next(options);
+    } else {
+      super.onRequest(options, handler);
+    }
+  }
+
+  @override
+  void onResponse(Response response, ResponseInterceptorHandler handler) {
+    if (_sensitive(response.requestOptions)) {
+      handler.next(response);
+    } else {
+      super.onResponse(response, handler);
+    }
+  }
+
+  @override
+  void onError(DioException err, ErrorInterceptorHandler handler) {
+    if (_sensitive(err.requestOptions)) {
+      handler.next(err);
+    } else {
+      super.onError(err, handler);
+    }
+  }
 }
 
 /// 创建无认证拦截器的 Dio 实例（用于登录等无需认证的请求）

@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:songloft_flutter/core/router/app_router.dart';
 import 'package:songloft_flutter/features/jsplugin/data/github_discovery_api.dart';
+import 'package:songloft_flutter/features/jsplugin/presentation/providers/client_registry_provider.dart';
 import 'package:songloft_flutter/features/jsplugin/data/jsplugin_api.dart';
 import 'package:songloft_flutter/features/jsplugin/domain/github_plugin.dart';
 import 'package:songloft_flutter/features/jsplugin/presentation/pages/github_discovery_page.dart';
@@ -19,6 +20,7 @@ import 'package:songloft_flutter/features/settings/presentation/providers/settin
 import 'package:songloft_flutter/l10n/app_localizations.dart';
 
 import '../github_discovery_fixtures.dart';
+import '../client_registry_fake.dart';
 
 class _NoProxy extends GithubProxyNotifier {
   @override
@@ -30,7 +32,14 @@ class _Discovery extends GithubDiscoveryApi {
   _Discovery(this.plugin);
   final requests =
       <
-        ({int page, String search, String sort, bool force, CancelToken cancel})
+        ({
+          int page,
+          String search,
+          String sort,
+          bool force,
+          CancelToken cancel,
+          String githubToken,
+        })
       >[];
   Future<GithubDiscoveryPageData> Function(int)? fetch;
   @override
@@ -40,6 +49,7 @@ class _Discovery extends GithubDiscoveryApi {
     required String sort,
     required String proxy,
     required CancelToken cancelToken,
+    String githubToken = '',
     bool force = false,
     void Function(GithubDiscoveryPageData)? onProgress,
   }) async {
@@ -49,6 +59,7 @@ class _Discovery extends GithubDiscoveryApi {
       sort: sort,
       force: force,
       cancel: cancelToken,
+      githubToken: githubToken,
     ));
     if (fetch != null) return fetch!(page);
     return GithubDiscoveryPageData(plugins: [plugin], checked: 1, failures: {});
@@ -118,6 +129,16 @@ class _Plugins extends JSPluginApi {
 class _Settings extends SettingsApi {
   final bool empty;
   _Settings(this.empty) : super(dio: Dio());
+  String credential = '';
+  bool failSave = false;
+  @override
+  Future<String> getGithubDiscoveryToken() async => credential;
+  @override
+  Future<String> updateGithubDiscoveryToken(String token) async {
+    if (failSave) throw StateError('save failed');
+    return credential = token.trim();
+  }
+
   @override
   Future<List<PluginRegistryConfig>> getPluginRegistries() async =>
       empty
@@ -184,6 +205,9 @@ Future<ProviderContainer> _pump(
       overrides: [
         githubDiscoveryApiProvider.overrideWithValue(discovery),
         jsPluginApiProvider.overrideWithValue(plugins),
+        clientRegistryApiProvider.overrideWithValue(
+          FakeClientRegistryApi(plugins),
+        ),
         githubProxyProvider.overrideWith(_NoProxy.new),
         settingsApiProvider.overrideWithValue(_Settings(emptySources)),
         serverVersionProvider.overrideWith(
@@ -229,6 +253,62 @@ Future<void> _install(WidgetTester tester) async {
 }
 
 void main() {
+  testWidgets('Token 保存在服务器，更换和清除后发现请求使用新配置', (tester) async {
+    final discovery = _Discovery(discoveryPlugin());
+    final container = await _pump(tester, discovery, _Plugins());
+    final settings = container.read(settingsApiProvider) as _Settings;
+    expect(discovery.requests.last.githubToken, '');
+    await tester.enterText(find.byType(TextField), 'music');
+    await _frames(tester);
+    await tester.tap(find.byTooltip('GitHub Token'));
+    await _frames(tester);
+    final input = find.descendant(
+      of: find.byType(AlertDialog),
+      matching: find.byType(TextField),
+    );
+    expect(tester.widget<TextField>(input).obscureText, isTrue);
+    await tester.enterText(input, 'ghp_saved');
+    await tester.pump();
+    await tester.tap(find.text('保存'));
+    await _frames(tester);
+    expect(settings.credential, 'ghp_saved');
+    expect(discovery.requests.last.githubToken, 'ghp_saved');
+    expect(discovery.requests.last.search, 'music');
+    await tester.tap(find.byTooltip('GitHub Token'));
+    await _frames(tester);
+    expect(find.text('当前服务器已配置 Token。'), findsOneWidget);
+    expect(tester.widget<TextField>(input).controller!.text, '');
+    await tester.tap(find.text('清除 Token'));
+    await _frames(tester);
+    expect(settings.credential, '');
+    expect(discovery.requests.last.githubToken, '');
+    expect(discovery.requests.last.search, 'music');
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('保存 Token 失败保留原配置和弹窗', (tester) async {
+    final discovery = _Discovery(discoveryPlugin());
+    final container = await _pump(tester, discovery, _Plugins());
+    final settings = container.read(settingsApiProvider) as _Settings;
+    settings.failSave = true;
+    await tester.tap(find.byTooltip('GitHub Token'));
+    await _frames(tester);
+    await tester.enterText(
+      find.descendant(
+        of: find.byType(AlertDialog),
+        matching: find.byType(TextField),
+      ),
+      'ghp_new',
+    );
+    await tester.pump();
+    await tester.tap(find.text('保存'));
+    await _frames(tester);
+    expect(find.byType(AlertDialog), findsOneWidget);
+    expect(find.text('保存 GitHub Token 失败，请检查格式后重试。'), findsOneWidget);
+    expect(settings.credential, '');
+    expect(discovery.requests.last.githubToken, '');
+  });
+
   testWidgets('服务器刷新确认卸载后清除发现安装标记，允许重新安装', (tester) async {
     final plugin = discoveryPlugin();
     final api = _Plugins();

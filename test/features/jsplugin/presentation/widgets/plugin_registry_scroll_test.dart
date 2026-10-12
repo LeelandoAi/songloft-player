@@ -7,12 +7,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:songloft_flutter/core/theme/app_theme.dart';
 import 'package:songloft_flutter/core/theme/widgets/glass_capsule_bar.dart';
 import 'package:songloft_flutter/features/jsplugin/data/jsplugin_api.dart';
+import 'package:songloft_flutter/features/jsplugin/presentation/providers/client_registry_provider.dart';
 import 'package:songloft_flutter/features/jsplugin/presentation/providers/jsplugin_provider.dart';
 import 'package:songloft_flutter/features/jsplugin/presentation/widgets/plugin_registry.dart';
 import 'package:songloft_flutter/features/settings/data/settings_api.dart';
 import 'package:songloft_flutter/features/settings/presentation/providers/settings_provider.dart';
 import 'package:songloft_flutter/l10n/app_localizations.dart';
 import 'package:songloft_flutter/shared/layouts/adaptive_scaffold.dart';
+import '../../client_registry_fake.dart';
 
 typedef _Request = ({int page, String? search, String url, bool force});
 
@@ -24,6 +26,11 @@ class _SettingsApi extends SettingsApi {
     PluginRegistryConfig(url: 'https://example.com/a', name: '源 A'),
     PluginRegistryConfig(url: 'https://example.com/b', name: '源 B'),
   ];
+
+  @override
+  Future<List<PluginRegistryConfig>> updatePluginRegistries(
+    List<PluginRegistryConfig> registries,
+  ) async => registries;
 }
 
 class _NoProxy extends GithubProxyNotifier {
@@ -101,6 +108,7 @@ Future<void> _pumpStore(
   bool capsule = true,
   Size size = const Size(390, 800),
   double safeBottom = 24,
+  FakeClientRegistryApi? client,
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
@@ -111,6 +119,9 @@ Future<void> _pumpStore(
       overrides: [
         settingsApiProvider.overrideWithValue(_SettingsApi()),
         jsPluginApiProvider.overrideWithValue(api),
+        clientRegistryApiProvider.overrideWithValue(
+          client ?? FakeClientRegistryApi(api),
+        ),
         githubProxyProvider.overrideWith(_NoProxy.new),
       ],
       child: MaterialApp(
@@ -160,6 +171,23 @@ Future<void> _scrollToEnd(WidgetTester tester) async {
 }
 
 void main() {
+  testWidgets('首个插件先显示，后续清单继续加载而不遮住条目', (tester) async {
+    final done = Completer<RegistryRefreshResponse>();
+    final api = _RegistryApi((_) => done.future);
+    final client = FakeClientRegistryApi(api);
+    await _pumpStore(tester, api, client: client);
+    client.progress!(_page(1, count: 1, total: 1, prefix: '快'));
+    await _pumpFrames(tester);
+    expect(find.text('快 0'), findsOneWidget);
+    expect(done.isCompleted, isFalse);
+    expect(find.byType(LinearProgressIndicator), findsOneWidget);
+    done.complete(_page(1, count: 3, total: 3, prefix: '快'));
+    await _pumpFrames(tester);
+    expect(find.text('快 1'), findsOneWidget);
+    expect(find.byType(LinearProgressIndicator), findsNothing);
+    expect(api.requests, hasLength(1));
+  });
+
   testWidgets('临近底部追加下一页，加载中保留条目并防止重复请求', (tester) async {
     final next = Completer<RegistryRefreshResponse>();
     final api = _RegistryApi(
@@ -182,6 +210,61 @@ void main() {
     expect(find.text('插件 39'), findsOneWidget);
     expect(api.requests.map((r) => r.page), [1, 2]);
     expect(api.requests.every((r) => !r.force), isTrue);
+  });
+
+  testWidgets('首条安装后迟到的更高版本仍显示更新入口', (tester) async {
+    final done = Completer<RegistryRefreshResponse>();
+    final api = _RegistryApi((_) => done.future);
+    final client = FakeClientRegistryApi(api);
+    RegistryRefreshResponse catalog(String version) => RegistryRefreshResponse(
+      plugins: [
+        RegistryPluginEntry(
+          name: '渐进插件',
+          entryPath: 'progress',
+          version: version,
+          author: 'Alice',
+          identity: 'alice',
+          downloadUrl: 'https://example.com/plugin.zip',
+        ),
+      ],
+      total: 1,
+      page: 1,
+      pageSize: 20,
+    );
+    await _pumpStore(tester, api, client: client);
+    client.progress!(catalog('1.0.0'));
+    await _pumpFrames(tester);
+    await tester.tap(find.text('安装'));
+    await _pumpFrames(tester);
+    client.progress!(catalog('2.0.0'));
+    await _pumpFrames(tester);
+    expect(find.textContaining('更新至'), findsOneWidget);
+    done.complete(catalog('2.0.0'));
+    await _pumpFrames(tester);
+    expect(find.textContaining('更新至'), findsOneWidget);
+  });
+
+  testWidgets('删除全部源后，旧请求的进度与完成结果不能重新填入列表', (tester) async {
+    final done = Completer<RegistryRefreshResponse>();
+    final api = _RegistryApi((_) => done.future);
+    final client = FakeClientRegistryApi(api);
+    await _pumpStore(tester, api, client: client);
+    final oldProgress = client.progress!;
+    final oldCancel = client.activeCancel!;
+    await tester.tap(find.byTooltip('管理订阅源'));
+    await _pumpFrames(tester);
+    await tester.tap(find.byIcon(Icons.delete_outline).first);
+    await _pumpFrames(tester);
+    await tester.tap(find.byIcon(Icons.delete_outline).first);
+    await _pumpFrames(tester);
+    await tester.tap(find.text('保存'));
+    await _pumpFrames(tester);
+    expect(oldCancel.isCancelled, isTrue);
+    oldProgress(_page(1, count: 1, total: 1, prefix: '迟到'));
+    done.complete(_page(1, count: 1, total: 1, prefix: '迟到'));
+    await _pumpFrames(tester);
+    expect(find.text('迟到 0'), findsNothing);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('追加失败保留列表，重试同一页且不强制刷新', (tester) async {

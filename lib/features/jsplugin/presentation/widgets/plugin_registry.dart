@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
@@ -15,9 +16,11 @@ import '../../../../shared/utils/responsive_snackbar.dart';
 import '../../../settings/data/settings_api.dart';
 import '../../../settings/presentation/providers/settings_provider.dart';
 import '../../data/jsplugin_api.dart';
+import '../../data/client_registry_api.dart' show compareRegistryVersions;
 import '../../domain/github_plugin.dart';
 import '../providers/github_discovery_provider.dart';
 import '../providers/jsplugin_provider.dart';
+import '../providers/client_registry_provider.dart';
 import 'plugin_icon_utils.dart';
 
 /// 官方插件源 URL
@@ -49,6 +52,8 @@ class _PluginRegistryPageState extends ConsumerState<PluginRegistryPage> {
   bool _loadingMore = false;
   bool _hasMore = false;
   int _requestGeneration = 0;
+  CancelToken? _cancel;
+  bool _fetchingCatalog = false;
   RegistryRefreshResponse? _pluginResponse;
   String? _pluginError;
   String? _loadMoreError;
@@ -58,6 +63,7 @@ class _PluginRegistryPageState extends ConsumerState<PluginRegistryPage> {
   final _scrollController = ScrollController();
   Timer? _searchDebounce;
   int _selectionRevision = 0;
+  int _registryGeneration = 0;
 
   @override
   void initState() {
@@ -68,6 +74,7 @@ class _PluginRegistryPageState extends ConsumerState<PluginRegistryPage> {
 
   @override
   void dispose() {
+    _cancel?.cancel();
     _searchController.dispose();
     _scrollController.dispose();
     _searchDebounce?.cancel();
@@ -75,11 +82,16 @@ class _PluginRegistryPageState extends ConsumerState<PluginRegistryPage> {
   }
 
   Future<void> _loadRegistries() async {
+    final generation = ++_registryGeneration;
+    final api = ref.read(settingsApiProvider);
     setState(() => _loadingRegistries = true);
     try {
-      final api = ref.read(settingsApiProvider);
       final registries = await api.getPluginRegistries();
-      if (!mounted) return;
+      if (!mounted ||
+          generation != _registryGeneration ||
+          !identical(api, ref.read(settingsApiProvider))) {
+        return;
+      }
       setState(() {
         _registries = registries;
         _loadingRegistries = false;
@@ -91,25 +103,33 @@ class _PluginRegistryPageState extends ConsumerState<PluginRegistryPage> {
         }
       });
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted ||
+          generation != _registryGeneration ||
+          !identical(api, ref.read(settingsApiProvider))) {
+        return;
+      }
       setState(() {
         _loadingRegistries = false;
       });
     }
   }
 
-  /// [force] 为 true 时让后端绕过缓存重拉。翻页与搜索**不要**传：它们在后端
-  /// 缓存的完整列表上切片/过滤，传了会让每次翻页都重拉整棵注册表树。
+  /// 客户端逐个解析清单；完成后的搜索/翻页复用本地缓存。
   Future<void> _refreshPlugins({
     bool force = false,
     bool append = false,
   }) async {
-    if (append && (_loadingPlugins || _loadingMore || !_hasMore)) return;
+    if (append &&
+        (_loadingPlugins || _loadingMore || _fetchingCatalog || !_hasMore)) {
+      return;
+    }
     final generation = append ? _requestGeneration : ++_requestGeneration;
     final allSources = _allSources;
     final registry = _selectedRegistry;
     final search = _searchText;
     final page = append ? _currentPage + 1 : 1;
+    if (!append) _cancel?.cancel();
+    final cancel = append ? _cancel! : _cancel = CancelToken();
     setState(() {
       _loadMoreError = null;
       if (append) {
@@ -122,6 +142,7 @@ class _PluginRegistryPageState extends ConsumerState<PluginRegistryPage> {
         _pluginResponse = null;
         _pluginError = null;
         _installedDuringListing.clear();
+        _fetchingCatalog = allSources || registry != null;
       }
     });
     if (!allSources && registry == null) return;
@@ -131,7 +152,37 @@ class _PluginRegistryPageState extends ConsumerState<PluginRegistryPage> {
     try {
       final proxy = await ref.read(githubProxyProvider.future);
       if (!mounted || generation != _requestGeneration) return;
-      final api = ref.read(jsPluginApiProvider);
+      final api = ref.read(clientRegistryApiProvider);
+      void apply(RegistryRefreshResponse response, {bool complete = false}) {
+        if (!mounted ||
+            generation != _requestGeneration ||
+            cancel.isCancelled) {
+          return;
+        }
+        setState(() {
+          final plugins = <String, RegistryPluginEntry>{
+            if (append && _pluginResponse != null)
+              for (final plugin in _pluginResponse!.plugins)
+                plugin.rowKey: plugin,
+            for (final plugin in response.plugins)
+              plugin.rowKey: _withInstalledState(plugin),
+          };
+          _pluginResponse = RegistryRefreshResponse(
+            plugins: plugins.values.toList(),
+            total: response.total,
+            page: response.page,
+            pageSize: response.pageSize,
+            warnings: response.warnings,
+          );
+          _currentPage = response.page;
+          _hasMore =
+              complete && response.page * response.pageSize < response.total;
+          _loadingPlugins = !complete && plugins.isEmpty;
+          _loadingMore = append && !complete;
+          if (complete) _fetchingCatalog = false;
+        });
+      }
+
       final response = await api.refreshRegistry(
         registryUrl: allSources ? '' : registry!.url,
         allSources: allSources,
@@ -139,33 +190,36 @@ class _PluginRegistryPageState extends ConsumerState<PluginRegistryPage> {
         pageSize: _pageSize,
         search: search.isEmpty ? null : search,
         githubProxy: proxy.isEmpty ? null : proxy,
-        // 「全部」模式各源用自身存储的 token，前端不传
+        // 「全部」模式读取各源自己的凭据。
         token: allSources || registry!.token.isEmpty ? null : registry.token,
         force: force,
+        registries: _registries,
+        cancelToken: cancel,
+        onProgress: (partial) => apply(partial),
+        onSources: (sources) {
+          if (!mounted ||
+              generation != _requestGeneration ||
+              cancel.isCancelled) {
+            return;
+          }
+          setState(() {
+            _registries = sources;
+            if (_selectedRegistry != null) {
+              _selectedRegistry =
+                  sources
+                      .where(
+                        (source) =>
+                            source.enabled &&
+                            source.url == _selectedRegistry!.url,
+                      )
+                      .firstOrNull;
+              if (_selectedRegistry == null) _allSources = true;
+            }
+          });
+        },
       );
       if (!mounted || generation != _requestGeneration) return;
-      setState(() {
-        final plugins = <String, RegistryPluginEntry>{
-          if (append)
-            for (final plugin in _pluginResponse!.plugins)
-              plugin.rowKey: plugin,
-          for (final plugin in response.plugins)
-            plugin.rowKey: _withInstalledState(plugin),
-        };
-        _pluginResponse = RegistryRefreshResponse(
-          plugins: plugins.values.toList(),
-          total: response.total,
-          page: response.page,
-          pageSize: response.pageSize,
-          warnings: append ? _pluginResponse!.warnings : response.warnings,
-        );
-        _currentPage = response.page;
-        _hasMore =
-            response.plugins.isNotEmpty &&
-            response.page * response.pageSize < response.total;
-        _loadingPlugins = false;
-        _loadingMore = false;
-      });
+      apply(response, complete: true);
       _scheduleLoadMore();
     } catch (e) {
       if (!mounted || generation != _requestGeneration) return;
@@ -178,6 +232,7 @@ class _PluginRegistryPageState extends ConsumerState<PluginRegistryPage> {
         }
         _loadingPlugins = false;
         _loadingMore = false;
+        _fetchingCatalog = false;
       });
     }
   }
@@ -230,7 +285,8 @@ class _PluginRegistryPageState extends ConsumerState<PluginRegistryPage> {
       return plugin.copyWith(
         installed: true,
         installedVersion: installed.version,
-        hasUpdate: false,
+        hasUpdate:
+            compareRegistryVersions(plugin.version, installed.version) > 0,
         conflict: false,
         conflictWith: '',
       );
@@ -267,6 +323,7 @@ class _PluginRegistryPageState extends ConsumerState<PluginRegistryPage> {
   }
 
   void _onSearchChanged(String value) {
+    _cancel?.cancel();
     _searchDebounce?.cancel();
     // 输入时立即作废旧请求，防止防抖窗口内旧页返回并混入新搜索。
     ++_requestGeneration;
@@ -309,6 +366,28 @@ class _PluginRegistryPageState extends ConsumerState<PluginRegistryPage> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(settingsApiProvider, (previous, next) {
+      if (identical(previous, next)) return;
+      _requestGeneration++;
+      _cancel?.cancel();
+      _searchDebounce?.cancel();
+      _searchDebounce = null;
+      setState(() {
+        _registries = [];
+        _selectedRegistry = null;
+        _allSources = false;
+        _pluginResponse = null;
+        _pluginError = null;
+        _loadMoreError = null;
+        _loadingPlugins = false;
+        _loadingMore = false;
+        _fetchingCatalog = false;
+        _hasMore = false;
+        _installedDuringListing.clear();
+      });
+      _loadRegistries();
+    });
+    ref.watch(clientRegistryApiProvider);
     ref.watch(githubDiscoveryInstallsProvider);
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
@@ -322,7 +401,7 @@ class _PluginRegistryPageState extends ConsumerState<PluginRegistryPage> {
               tooltip: l10n.jspluginRefreshList,
               // 用户主动刷新：绕过缓存拉最新的源内容
               onPressed:
-                  _loadingPlugins || _loadingMore
+                  _loadingPlugins || _loadingMore || _fetchingCatalog
                       ? null
                       : () => _refreshPlugins(force: true),
             ),
@@ -574,6 +653,7 @@ class _PluginRegistryPageState extends ConsumerState<PluginRegistryPage> {
     return Column(
       children: [
         // warnings
+        if (_fetchingCatalog) const LinearProgressIndicator(),
         if (_pluginResponse!.warnings.isNotEmpty)
           PluginRegistryWarningsBanner(warnings: _pluginResponse!.warnings),
         Expanded(
@@ -627,7 +707,12 @@ class _PluginRegistryPageState extends ConsumerState<PluginRegistryPage> {
                   // rowKey 而非 index：追加/搜索后保持每一行的安装状态身份。
                   key: ValueKey(plugin.rowKey),
                   entry: plugin,
-                  token: _allSources ? '' : (_selectedRegistry?.token ?? ''),
+                  token:
+                      _registries
+                          .where((source) => source.url == plugin.sourceUrl)
+                          .firstOrNull
+                          ?.token ??
+                      (_allSources ? '' : (_selectedRegistry?.token ?? '')),
                   onInstalled: () {
                     _markPluginInstalled(plugin);
                     ref.invalidate(jsPluginsProvider);
@@ -648,9 +733,21 @@ class _PluginRegistryPageState extends ConsumerState<PluginRegistryPage> {
           (context) => _RegistryManagementDialog(
             registries: _registries,
             onSaved: (registries) {
+              _requestGeneration++;
+              _cancel?.cancel();
+              _searchDebounce?.cancel();
+              _searchDebounce = null;
               setState(() {
+                _loadingPlugins = false;
+                _loadingMore = false;
+                _fetchingCatalog = false;
+                _hasMore = false;
                 _registries = registries;
                 final enabled = registries.where((r) => r.enabled).toList();
+                if (enabled.isEmpty) {
+                  _selectedRegistry = null;
+                  _allSources = false;
+                }
                 // 选中的具体源被删除/禁用后回退：优先保持「全部」聚合
                 if (!_allSources &&
                     _selectedRegistry != null &&
@@ -799,8 +896,11 @@ class _RegistryPluginItemState extends ConsumerState<_RegistryPluginItem> {
       final api = ref.read(jsPluginApiProvider);
       final result = await api.installFromRegistry(
         downloadUrl: widget.entry.downloadUrl,
-        githubProxy: proxy.isEmpty ? null : proxy,
-        token: widget.token.isEmpty ? null : widget.token,
+        githubProxy: widget.token.isNotEmpty || proxy.isEmpty ? null : proxy,
+        token:
+            (widget.entry.sourceUrl ?? '').isNotEmpty || widget.token.isEmpty
+                ? null
+                : widget.token,
         sourceUrl: widget.entry.sourceUrl,
         overwrite: overwrite,
       );

@@ -11,6 +11,7 @@ enum DiscoveryFailure {
   invalidRelease,
   unavailable,
   rateLimited,
+  invalidToken,
 }
 
 class GithubDiscoveryException implements Exception {
@@ -42,6 +43,8 @@ class GithubDiscoveryApi {
   final DateTime Function() _now;
   final _cache = <String, ({DateTime until, GithubPlugin plugin})>{};
   final _pages = <String, ({DateTime until, GithubDiscoveryPageData data})>{};
+  String _credential = '';
+  int _credentialRevision = 0;
   GithubDiscoveryApi({Dio? dio, DateTime Function()? now})
     : _dio =
           dio ??
@@ -60,8 +63,11 @@ class GithubDiscoveryApi {
     if (token.isCancelled) throw token.cancelError!;
   }
 
-  void _checkStatus(Response<String> response) {
+  void _checkStatus(Response<String> response, {required bool authenticated}) {
     final status = response.statusCode ?? 0;
+    if (status == 401 && authenticated) {
+      throw const GithubDiscoveryException(DiscoveryFailure.invalidToken);
+    }
     final remaining = response.headers.value('x-ratelimit-remaining');
     final retry = response.headers.value('retry-after');
     if (status == 429 ||
@@ -95,6 +101,7 @@ class GithubDiscoveryApi {
     String address,
     String proxy,
     CancelToken cancel, {
+    String githubToken = '',
     DiscoveryFailure invalidData = DiscoveryFailure.unavailable,
   }) async {
     _ensureActive(cancel);
@@ -106,19 +113,28 @@ class GithubDiscoveryApi {
         prefix.userInfo.isEmpty &&
         !prefix.hasQuery &&
         !prefix.hasFragment;
-    final proxied = applyGithubProxy(address, validProxy ? proxy : '');
+    final officialApi = Uri.parse(address).origin == 'https://api.github.com';
+    final authenticated = officialApi && githubToken.isNotEmpty;
+    // Never send credentials through a prefix proxy, or follow an authenticated redirect.
+    final proxied =
+        authenticated
+            ? address
+            : applyGithubProxy(address, validProxy ? proxy : '');
     Future<dynamic> send(String url) async {
       _ensureActive(cancel);
       final response = await _dio.get<String>(
         url,
         cancelToken: cancel,
         options: Options(
+          headers:
+              authenticated ? {'Authorization': 'Bearer $githubToken'} : null,
+          followRedirects: !authenticated,
           responseType: ResponseType.plain,
           validateStatus: (_) => true,
         ),
       );
       _ensureActive(cancel);
-      _checkStatus(response);
+      _checkStatus(response, authenticated: authenticated);
       final body = response.data ?? '';
       if (utf8.encode(body).length > 2 * 1024 * 1024) {
         throw GithubDiscoveryException(invalidData);
@@ -157,11 +173,19 @@ class GithubDiscoveryApi {
     required String sort,
     required String proxy,
     required CancelToken cancelToken,
+    String githubToken = '',
     bool force = false,
     void Function(GithubDiscoveryPageData)? onProgress,
   }) async {
     _ensureActive(cancelToken);
-    final pageKey = '$page|$search|$sort|$proxy';
+    if (_credential != githubToken) {
+      _credential = githubToken;
+      _credentialRevision++;
+      _cache.clear();
+      _pages.clear();
+    }
+    final credentialRevision = _credentialRevision;
+    final pageKey = '$page|$search|$sort|$proxy|$credentialRevision';
     final cachedPage = _pages[pageKey];
     if (!force && cachedPage != null && cachedPage.until.isAfter(_now())) {
       onProgress?.call(cachedPage.data);
@@ -187,6 +211,7 @@ class GithubDiscoveryApi {
         }).toString(),
         proxy,
         cancelToken,
+        githubToken: githubToken,
       ),
     );
     if (result['items'] is! List || result['total_count'] is! int) {
@@ -245,6 +270,8 @@ class GithubDiscoveryApi {
               proxy,
               cancelToken,
               force,
+              githubToken,
+              credentialRevision,
             );
           } catch (error) {
             _ensureActive(cancelToken);
@@ -253,6 +280,7 @@ class GithubDiscoveryApi {
                     ? error.reason
                     : DiscoveryFailure.unavailable;
             failures[reason] = (failures[reason] ?? 0) + 1;
+            if (reason == DiscoveryFailure.invalidToken) rethrow;
             if (reason == DiscoveryFailure.rateLimited) {
               limited = true;
               retryAt = (error as GithubDiscoveryException).retryAt;
@@ -282,8 +310,11 @@ class GithubDiscoveryApi {
     String proxy,
     CancelToken cancel,
     bool force,
+    String githubToken,
+    int credentialRevision,
   ) async {
-    final key = '${repo.fullName}|${repo.defaultBranch}|$proxy';
+    final key =
+        '${repo.fullName}|${repo.defaultBranch}|$proxy|$credentialRevision';
     final cached = _cache[key];
     if (!force && cached != null && cached.until.isAfter(_now())) {
       return cached.plugin.withRepository(repo);
@@ -353,6 +384,7 @@ class GithubDiscoveryApi {
         'https://api.github.com/repos/${download.repository}/releases/tags/${Uri.encodeComponent(download.tag)}',
         proxy,
         cancel,
+        githubToken: githubToken,
       ),
     );
     if (release['draft'] != false ||

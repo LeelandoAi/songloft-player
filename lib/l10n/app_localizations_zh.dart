@@ -9,6 +9,43 @@ class AppLocalizationsZh extends AppLocalizations {
   AppLocalizationsZh([String locale = 'zh']) : super(locale);
 
   @override
+  String get githubDiscoveryTokenTitle => 'GitHub Token';
+
+  @override
+  String get githubDiscoveryTokenHelp =>
+      '保存在当前服务器，连接此服务器的客户端共用。发现请求仍由当前客户端发起。配置 Token 后，GitHub API 直连 api.github.com；GitHub 代理和公开清单请求均不携带 Token。';
+
+  @override
+  String get githubDiscoveryTokenHint => '输入新的个人访问 Token';
+
+  @override
+  String get githubDiscoveryTokenConfigured => '当前服务器已配置 Token。';
+
+  @override
+  String get githubDiscoveryTokenNotConfigured => '当前服务器未配置 Token。';
+
+  @override
+  String get githubDiscoveryTokenSave => '保存';
+
+  @override
+  String get githubDiscoveryTokenClear => '清除 Token';
+
+  @override
+  String get githubDiscoveryTokenCreate => '创建 GitHub Token';
+
+  @override
+  String get githubDiscoveryTokenVisibility => '显示 / 隐藏输入';
+
+  @override
+  String get githubDiscoveryTokenLoadFailed => '读取服务器 GitHub Token 失败，请重试。';
+
+  @override
+  String get githubDiscoveryTokenSaveFailed => '保存 GitHub Token 失败，请检查格式后重试。';
+
+  @override
+  String get githubDiscoveryTokenInvalid => 'GitHub Token 无效或已过期，请修改或清除。';
+
+  @override
   String get githubDiscoveryTitle => 'GitHub 发现';
 
   @override

@@ -9,6 +9,48 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
+  String get githubDiscoveryTokenTitle => 'GitHub Token';
+
+  @override
+  String get githubDiscoveryTokenHelp =>
+      'Saved on the connected server and shared by its clients. Discovery runs on this device. With a token, GitHub API requests connect directly to api.github.com; GitHub proxies and public metadata requests never receive the token.';
+
+  @override
+  String get githubDiscoveryTokenHint => 'Enter a new personal access token';
+
+  @override
+  String get githubDiscoveryTokenConfigured =>
+      'A token is configured on this server.';
+
+  @override
+  String get githubDiscoveryTokenNotConfigured =>
+      'No token is configured on this server.';
+
+  @override
+  String get githubDiscoveryTokenSave => 'Save';
+
+  @override
+  String get githubDiscoveryTokenClear => 'Clear token';
+
+  @override
+  String get githubDiscoveryTokenCreate => 'Create a GitHub token';
+
+  @override
+  String get githubDiscoveryTokenVisibility => 'Show / hide input';
+
+  @override
+  String get githubDiscoveryTokenLoadFailed =>
+      'Could not read the server’s GitHub token. Retry.';
+
+  @override
+  String get githubDiscoveryTokenSaveFailed =>
+      'Could not save the GitHub token. Check its format and retry.';
+
+  @override
+  String get githubDiscoveryTokenInvalid =>
+      'The GitHub token is invalid or expired. Update or clear it.';
+
+  @override
   String get githubDiscoveryTitle => 'GitHub discovery';
 
   @override

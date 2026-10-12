@@ -100,6 +100,78 @@ abstract class AppLocalizations {
     Locale('zh'),
   ];
 
+  /// No description provided for @githubDiscoveryTokenTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'GitHub Token'**
+  String get githubDiscoveryTokenTitle;
+
+  /// No description provided for @githubDiscoveryTokenHelp.
+  ///
+  /// In zh, this message translates to:
+  /// **'保存在当前服务器，连接此服务器的客户端共用。发现请求仍由当前客户端发起。配置 Token 后，GitHub API 直连 api.github.com；GitHub 代理和公开清单请求均不携带 Token。'**
+  String get githubDiscoveryTokenHelp;
+
+  /// No description provided for @githubDiscoveryTokenHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'输入新的个人访问 Token'**
+  String get githubDiscoveryTokenHint;
+
+  /// No description provided for @githubDiscoveryTokenConfigured.
+  ///
+  /// In zh, this message translates to:
+  /// **'当前服务器已配置 Token。'**
+  String get githubDiscoveryTokenConfigured;
+
+  /// No description provided for @githubDiscoveryTokenNotConfigured.
+  ///
+  /// In zh, this message translates to:
+  /// **'当前服务器未配置 Token。'**
+  String get githubDiscoveryTokenNotConfigured;
+
+  /// No description provided for @githubDiscoveryTokenSave.
+  ///
+  /// In zh, this message translates to:
+  /// **'保存'**
+  String get githubDiscoveryTokenSave;
+
+  /// No description provided for @githubDiscoveryTokenClear.
+  ///
+  /// In zh, this message translates to:
+  /// **'清除 Token'**
+  String get githubDiscoveryTokenClear;
+
+  /// No description provided for @githubDiscoveryTokenCreate.
+  ///
+  /// In zh, this message translates to:
+  /// **'创建 GitHub Token'**
+  String get githubDiscoveryTokenCreate;
+
+  /// No description provided for @githubDiscoveryTokenVisibility.
+  ///
+  /// In zh, this message translates to:
+  /// **'显示 / 隐藏输入'**
+  String get githubDiscoveryTokenVisibility;
+
+  /// No description provided for @githubDiscoveryTokenLoadFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'读取服务器 GitHub Token 失败，请重试。'**
+  String get githubDiscoveryTokenLoadFailed;
+
+  /// No description provided for @githubDiscoveryTokenSaveFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'保存 GitHub Token 失败，请检查格式后重试。'**
+  String get githubDiscoveryTokenSaveFailed;
+
+  /// No description provided for @githubDiscoveryTokenInvalid.
+  ///
+  /// In zh, this message translates to:
+  /// **'GitHub Token 无效或已过期，请修改或清除。'**
+  String get githubDiscoveryTokenInvalid;
+
   /// No description provided for @githubDiscoveryTitle.
   ///
   /// In zh, this message translates to:

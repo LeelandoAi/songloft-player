@@ -416,6 +416,21 @@ class VolumeNormalizeSetting {
 /// 用户可见的功能开关一律走这里；通用 KV 配置仍走 ConfigApi（admin 入口）。
 /// 详见后端 AGENTS.md「配置接口规范」。
 class SettingsApi {
+  Future<String> getGithubDiscoveryToken() async {
+    final response = await dio.get<Map<String, dynamic>>(
+      '${AppConfig.apiPrefix}/settings/github-discovery-token',
+    );
+    return response.data!['token'] as String;
+  }
+
+  Future<String> updateGithubDiscoveryToken(String token) async {
+    final response = await dio.put<Map<String, dynamic>>(
+      '${AppConfig.apiPrefix}/settings/github-discovery-token',
+      data: {'token': token.trim()},
+    );
+    return response.data!['token'] as String;
+  }
+
   final Dio dio;
 
   SettingsApi({required this.dio});

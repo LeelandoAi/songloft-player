@@ -9,6 +9,49 @@ class AppLocalizationsEs extends AppLocalizations {
   AppLocalizationsEs([String locale = 'es']) : super(locale);
 
   @override
+  String get githubDiscoveryTokenTitle => 'GitHub Token';
+
+  @override
+  String get githubDiscoveryTokenHelp =>
+      'Se guarda en el servidor conectado y se comparte entre sus clientes. El descubrimiento se ejecuta en este dispositivo. Con un token, las solicitudes a la API de GitHub se conectan directamente a api.github.com; los proxies de GitHub y las solicitudes de metadatos públicos nunca reciben el token.';
+
+  @override
+  String get githubDiscoveryTokenHint =>
+      'Introduce un nuevo token de acceso personal';
+
+  @override
+  String get githubDiscoveryTokenConfigured =>
+      'Hay un token configurado en este servidor.';
+
+  @override
+  String get githubDiscoveryTokenNotConfigured =>
+      'No hay ningún token configurado en este servidor.';
+
+  @override
+  String get githubDiscoveryTokenSave => 'Guardar';
+
+  @override
+  String get githubDiscoveryTokenClear => 'Borrar token';
+
+  @override
+  String get githubDiscoveryTokenCreate => 'Crear un token de GitHub';
+
+  @override
+  String get githubDiscoveryTokenVisibility => 'Mostrar / ocultar entrada';
+
+  @override
+  String get githubDiscoveryTokenLoadFailed =>
+      'No se pudo leer el token de GitHub del servidor. Reinténtalo.';
+
+  @override
+  String get githubDiscoveryTokenSaveFailed =>
+      'No se pudo guardar el token de GitHub. Revisa el formato y reinténtalo.';
+
+  @override
+  String get githubDiscoveryTokenInvalid =>
+      'El token de GitHub no es válido o ha caducado. Actualízalo o bórralo.';
+
+  @override
   String get githubDiscoveryTitle => 'Descubrir en GitHub';
 
   @override

@@ -52,6 +52,158 @@ ResponseBody _standard(RequestOptions request) {
 }
 
 void main() {
+  test('Token 只发送给直连 GitHub API，代理及公开清单不携带', () async {
+    final adapter = _Adapter((request) {
+      if (request.uri.host == 'mirror.test') return _json({}, status: 503);
+      return _standard(request);
+    });
+    final api = GithubDiscoveryApi(dio: Dio()..httpClientAdapter = adapter);
+    final page = await api.discover(
+      page: 1,
+      search: '',
+      sort: 'updated',
+      proxy: 'https://mirror.test/',
+      githubToken: 'ghp_secret',
+      cancelToken: CancelToken(),
+    );
+    expect(page.plugins, hasLength(1));
+    final github =
+        adapter.requests.where((r) => r.uri.host == 'api.github.com').toList();
+    expect(github, hasLength(2));
+    expect(
+      github.every(
+        (r) =>
+            r.headers['Authorization'] == 'Bearer ghp_secret' &&
+            !r.followRedirects,
+      ),
+      isTrue,
+    );
+    final metadata =
+        adapter.requests.where((r) => r.uri.host != 'api.github.com').toList();
+    expect(metadata, hasLength(2));
+    expect(
+      metadata.every(
+        (r) =>
+            r.headers['Authorization'] == null &&
+            !r.uri.toString().contains('ghp_secret'),
+      ),
+      isTrue,
+    );
+  });
+
+  test('更换和清除 Token 会重新检查缓存的 Release', () async {
+    final adapter = _Adapter(_standard);
+    final api = GithubDiscoveryApi(dio: Dio()..httpClientAdapter = adapter);
+    for (final token in ['ghp_one', 'ghp_two', '']) {
+      expect(
+        (await api.discover(
+          page: 1,
+          search: '',
+          sort: 'updated',
+          proxy: '',
+          githubToken: token,
+          cancelToken: CancelToken(),
+        )).plugins,
+        hasLength(1),
+      );
+    }
+    expect(adapter.requests, hasLength(9));
+    expect(adapter.requests.last.headers['Authorization'], isNull);
+  });
+
+  test('匿名清单返回 401 不会误判共享 Token 无效', () async {
+    for (final token in ['', 'ghp_valid']) {
+      final adapter = _Adapter(
+        (request) =>
+            request.uri.host == 'raw.githubusercontent.com'
+                ? _json({}, status: 401)
+                : _standard(request),
+      );
+      final api = GithubDiscoveryApi(dio: Dio()..httpClientAdapter = adapter);
+      addTearDown(api.close);
+      final page = await api.discover(
+        page: 1,
+        search: '',
+        sort: 'updated',
+        proxy: '',
+        githubToken: token,
+        cancelToken: CancelToken(),
+      );
+      expect(page.plugins, isEmpty);
+      expect(page.failures[DiscoveryFailure.unavailable], 1);
+      expect(
+        adapter.requests
+            .where((request) => request.uri.host == 'raw.githubusercontent.com')
+            .single
+            .headers['Authorization'],
+        isNull,
+      );
+    }
+  });
+
+  test('认证失败或重定向不会改走代理，也不会被隐藏为暂未验证', () async {
+    for (final status in [401, 302]) {
+      final adapter = _Adapter(
+        (request) => _json(
+          {},
+          status: status,
+          headers: {
+            'location': ['https://mirror.test/collect'],
+          },
+        ),
+      );
+      final api = GithubDiscoveryApi(dio: Dio()..httpClientAdapter = adapter);
+      await expectLater(
+        api.discover(
+          page: 1,
+          search: '',
+          sort: 'updated',
+          proxy: 'https://mirror.test/',
+          githubToken: 'ghp_secret',
+          cancelToken: CancelToken(),
+        ),
+        throwsA(
+          isA<GithubDiscoveryException>().having(
+            (e) => e.reason,
+            'reason',
+            status == 401
+                ? DiscoveryFailure.invalidToken
+                : DiscoveryFailure.unavailable,
+          ),
+        ),
+      );
+      expect(adapter.requests, hasLength(1));
+      expect(adapter.requests.single.uri.host, 'api.github.com');
+    }
+  });
+
+  test('Release 阶段发现 Token 失效会显示认证错误', () async {
+    final adapter = _Adapter(
+      (request) =>
+          request.uri.path.contains('/releases/')
+              ? _json({}, status: 401)
+              : _standard(request),
+    );
+    final api = GithubDiscoveryApi(dio: Dio()..httpClientAdapter = adapter);
+    await expectLater(
+      api.discover(
+        page: 1,
+        search: '',
+        sort: 'updated',
+        proxy: '',
+        githubToken: 'ghp_secret',
+        cancelToken: CancelToken(),
+      ),
+      throwsA(
+        isA<GithubDiscoveryException>().having(
+          (e) => e.reason,
+          'reason',
+          DiscoveryFailure.invalidToken,
+        ),
+      ),
+    );
+  });
+
   Future<GithubDiscoveryPageData> run(
     _Adapter adapter, {
     String proxy = '',

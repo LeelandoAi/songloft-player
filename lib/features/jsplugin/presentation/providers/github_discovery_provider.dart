@@ -8,6 +8,7 @@ import '../../../settings/presentation/providers/settings_provider.dart';
 import '../../data/github_discovery_api.dart';
 import '../../domain/github_plugin.dart';
 import 'jsplugin_provider.dart';
+import 'github_discovery_token_provider.dart';
 
 final githubDiscoveryApiProvider = Provider<GithubDiscoveryApi>((ref) {
   final api = GithubDiscoveryApi();
@@ -68,11 +69,15 @@ class GithubDiscoveryNotifier extends Notifier<GithubDiscoveryState> {
   CancelToken? _cancel;
   Timer? _debounce;
   int _generation = 0;
+  bool _forceNextLoad = false;
+  String _searchText = '';
+  String _sortOrder = 'updated';
 
   @override
   GithubDiscoveryState build() {
     ref.watch(baseUrlProvider);
     final proxy = ref.watch(githubProxyProvider);
+    final credential = ref.watch(githubDiscoveryTokenProvider);
     final generation = ++_generation;
     _cancel?.cancel();
     _debounce?.cancel();
@@ -81,15 +86,25 @@ class GithubDiscoveryNotifier extends Notifier<GithubDiscoveryState> {
       _cancel?.cancel();
       _debounce?.cancel();
     });
-    if (!proxy.isLoading) {
+    if (!proxy.isLoading && !credential.isLoading && !credential.hasError) {
       Future.microtask(() {
-        if (ref.mounted && generation == _generation) _load();
+        if (ref.mounted && generation == _generation) {
+          final force = _forceNextLoad;
+          _forceNextLoad = false;
+          _load(force: force);
+        }
       });
     }
-    return const GithubDiscoveryState(loading: true);
+    return GithubDiscoveryState(
+      search: _searchText,
+      sort: _sortOrder,
+      loading: !credential.hasError,
+      error: credential.error,
+    );
   }
 
   void search(String value) {
+    _searchText = value;
     _cancel?.cancel();
     _debounce?.cancel();
     ++_generation;
@@ -106,6 +121,7 @@ class GithubDiscoveryNotifier extends Notifier<GithubDiscoveryState> {
 
   void sort(String value) {
     if (value == state.sort) return;
+    _sortOrder = value;
     _debounce?.cancel();
     _debounce = null;
     state = GithubDiscoveryState(search: state.search, sort: value);
@@ -115,7 +131,8 @@ class GithubDiscoveryNotifier extends Notifier<GithubDiscoveryState> {
   void refresh() {
     _debounce?.cancel();
     _debounce = null;
-    _load(force: true);
+    _forceNextLoad = true;
+    ref.invalidate(githubDiscoveryTokenProvider);
   }
 
   void loadMore() {
@@ -133,6 +150,10 @@ class GithubDiscoveryNotifier extends Notifier<GithubDiscoveryState> {
     final pageNumber = append ? previous.nextPage! : 1;
     final api = ref.read(githubDiscoveryApiProvider);
     final proxy = ref.read(githubProxyProvider).value ?? '';
+    final credential = ref.read(githubDiscoveryTokenProvider);
+    if (credential.isLoading || credential.hasError || !credential.hasValue) {
+      return;
+    }
     void update(
       List<GithubDiscoveryPageData> pages,
       bool loading, [
@@ -157,6 +178,7 @@ class GithubDiscoveryNotifier extends Notifier<GithubDiscoveryState> {
         search: previous.search,
         sort: previous.sort,
         proxy: proxy,
+        githubToken: credential.requireValue,
         force: force,
         cancelToken: token,
         onProgress: (progress) => update([...base, progress], true),
