@@ -2,12 +2,15 @@
 
 本文件为 AI 编程助手提供 Songloft Flutter 前端的**入口信息**。代码本身是真实来源，本文件仅提供导航和约定。
 
+英文版见 [AGENTS.en.md](AGENTS.en.md)，内容、结构与本文件同步。
+
 > **详细文档**：
-> - 开发指南：[docs/development.md](docs/development.md)
-> - 架构补充：[docs/architecture.md](docs/architecture.md)
+> - AI 开发：[流程与复盘](docs/cn/ai-development.md) · [经验记录](LESSONS.md)
+> - 开发指南：[docs/cn/development.md](docs/cn/development.md)
+> - 架构补充：[docs/cn/architecture.md](docs/cn/architecture.md)
 > - Domain 层架构：[docs/cn/domain_layer.md](docs/cn/domain_layer.md)
-> - 平台注意事项：[docs/platform-notes.md](docs/platform-notes.md)
-> - 构建指南：[docs/build_guide.md](docs/build_guide.md)
+> - 平台注意事项：[docs/cn/platform-notes.md](docs/cn/platform-notes.md)
+> - 构建指南：[docs/cn/build_guide.md](docs/cn/build_guide.md)
 > - 版本发布：[scripts/README.md](scripts/README.md)
 > - 架构概览：父仓库 `docs/architecture_frontend.md`
 > - 颜色系统：父仓库 `docs/color_system.md`
@@ -190,7 +193,7 @@ Bundle 版通过 `--dart-define=HAS_BACKEND=true` 注入（`AppConfig.hasEmbedde
 
 ### 热更新（前端 libapp.so + Bundle 版 Android 后端 libgojni.so）
 
-详见 [docs/backend_hotupdate.md](docs/backend_hotupdate.md)（Bundle 统一模型,权威）。要点:
+详见 [docs/cn/backend_hotupdate.md](docs/cn/backend_hotupdate.md)（Bundle 统一模型,权威）。要点:
 
 - **无基线 + 自动发布**:客户端查**本渠道最新**（dev→`dev` tag;stable→`/releases/latest`,`channel_release_resolver.dart`）；`release.yml` 的 `build-bundled-android` 每次发版**自动**产出并上传前端 `patch-<abi>-<commit>.zip`+`manifest`、后端 `libgojni-<abi>-<commit>.so`+`backend-manifest`（无手动 workflow）。
 - **合并为一次体验**:`PatchUpdateDialog.maybeShow`（`lib/core/updater/`）每会话并行检查两类补丁,一个对话框列出、一起下载、**只重启一次**（`EmbeddedBackendService.restartProcess` 真进程冷启 —— libapp.so 生效 + `SongloftApplication` 预加载 libgojni.so）。
@@ -222,6 +225,11 @@ Bundle 版通过 `--dart-define=HAS_BACKEND=true` 注入（`AppConfig.hasEmbedde
 ---
 
 ## Git 提交约定
+
+- 调查、实现、验证、自审连续执行，不逐阶段确认；关键缺失信息、产品决定或扩大范围才询问。提交、推送、正式发布和 Issue 写操作分别按用户授权，已有授权不重复询问；直接提交 `main`，子仓库先提交、父仓库后更新指针。
+- 任务前读适用 LESSONS，结束记录证据型经验并同步英文；三个不同日期的独立事件提出规范升级，同一事故不重复计数，已有铁律立即执行。
+- 排查未解决 Issue 覆盖父仓库和全部子模块，递归发现、去重、完整分页，结合正文/全部评论/最新代码/验证判断；缺口明确报告，open 不等于未修复。
+- 验证绑定仓库、SHA 或未提交差异标识、环境与实际结果；相关未跑项写 `Not run`。代码变化重跑受影响项；Web/模拟验证不替代原生音频、后台、Bundle 和热更设备验收。详见 [本地 AI 流程](docs/cn/ai-development.md)。
 
 - **禁止** `Co-Authored-By` 尾部标记
 - Conventional Commits 格式：`type(scope): description`

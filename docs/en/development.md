@@ -1,5 +1,7 @@
 # Development Guide
 
+See the [AI development workflow](ai-development.md) for continuous execution, validation evidence, cross-repository Issue triage, and retrospectives. Lessons live in root `LESSONS.md`. Commits, pushes, releases, and Issue writes follow explicit authorization.
+
 ## Navigation and plugins
 
 Entry: Settings → Extensions → Navigation & plugins. Sections appear as Plugin management → Built-in navigation → Plugin navigation order. The Library switch sits below the plugin list; Appearance no longer repeats it. The count, fixed Home/Settings explanation and mobile overflow hint share the footer.
