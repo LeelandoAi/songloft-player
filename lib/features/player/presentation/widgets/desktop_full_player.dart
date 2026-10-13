@@ -291,39 +291,48 @@ class _DesktopFullPlayerState extends ConsumerState<DesktopFullPlayer>
                                       ),
                                     ),
                                     const SizedBox(height: 24),
-                                    // 歌曲标题
-                                    Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: AppSpacing.md,
-                                      ),
-                                      child: Text(
-                                        song.title,
-                                        style: theme.textTheme.headlineSmall
-                                            ?.copyWith(
-                                              fontWeight: FontWeight.bold,
+                                    // 歌曲信息支持选择复制；切歌时重建以清除旧选区。
+                                    SelectionArea(
+                                      key: ValueKey(song.id),
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Padding(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: AppSpacing.md,
                                             ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        textAlign: TextAlign.center,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 8),
-                                    // 艺术家名
-                                    Text(
-                                      song.artist ??
-                                          AppLocalizations.of(
-                                            context,
-                                          ).playerUnknownArtist,
-                                      style: theme.textTheme.bodyLarge
-                                          ?.copyWith(
-                                            color:
-                                                theme
-                                                    .colorScheme
-                                                    .onSurfaceVariant,
+                                            child: Text(
+                                              song.title,
+                                              style: theme
+                                                  .textTheme
+                                                  .headlineSmall
+                                                  ?.copyWith(
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              textAlign: TextAlign.center,
+                                            ),
                                           ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      textAlign: TextAlign.center,
+                                          const SizedBox(height: 8),
+                                          Text(
+                                            song.artist ??
+                                                AppLocalizations.of(
+                                                  context,
+                                                ).playerUnknownArtist,
+                                            style: theme.textTheme.bodyLarge
+                                                ?.copyWith(
+                                                  color:
+                                                      theme
+                                                          .colorScheme
+                                                          .onSurfaceVariant,
+                                                ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            textAlign: TextAlign.center,
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                   ],
                                 ),
