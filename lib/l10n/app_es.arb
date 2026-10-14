@@ -2299,6 +2299,8 @@
   "settingsAccountServer": "Servidor",
   "settingsNoMusicDir": "No hay carpeta de música seleccionada",
   "settingsLogout": "Cerrar sesión",
+  "settingsExitApp": "Salir de la aplicación",
+  "settingsExitAppSubtitle": "Detener la reproducción, las notificaciones y los servicios sin cerrar sesión",
   "settingsLogoutConfirmTitle": "Confirmar cierre de sesión",
   "settingsLogoutConfirmContent": "¿Seguro que quieres cerrar la sesión de la cuenta actual?",
   "settingsLogoutButton": "Cerrar sesión",

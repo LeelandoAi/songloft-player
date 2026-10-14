@@ -6843,6 +6843,18 @@ abstract class AppLocalizations {
   /// **'退出登录'**
   String get settingsLogout;
 
+  /// No description provided for @settingsExitApp.
+  ///
+  /// In zh, this message translates to:
+  /// **'退出应用'**
+  String get settingsExitApp;
+
+  /// No description provided for @settingsExitAppSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'停止播放、关闭通知与后台服务，保留登录状态'**
+  String get settingsExitAppSubtitle;
+
   /// No description provided for @settingsLogoutConfirmTitle.
   ///
   /// In zh, this message translates to:

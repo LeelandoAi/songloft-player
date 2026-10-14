@@ -2263,6 +2263,8 @@
   "settingsAccountServer": "Server",
   "settingsNoMusicDir": "No music folder selected",
   "settingsLogout": "Log out",
+  "settingsExitApp": "Exit app",
+  "settingsExitAppSubtitle": "Stop playback, notifications and background services; stay signed in",
   "settingsLogoutConfirmTitle": "Confirm log out",
   "settingsLogoutConfirmContent": "Are you sure you want to log out of the current account?",
   "settingsLogoutButton": "Log out",

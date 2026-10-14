@@ -37,7 +37,13 @@ class SongloftAudioHandler extends BaseAudioHandler with SeekHandler {
   // 不再使用 just_audio 的 AndroidEqualizer / AudioPipeline androidAudioEffects——后者会让
   // just_audio 对平台 player 调 androidEqualizerGetParameters()，而 media_kit 的
   // SongloftMediaKitPlayer 不实现该 Android 专属方法，会致全曲无法播放（songloft-org/songloft#76）。
-  late final ja.AudioPlayer _player = ja.AudioPlayer();
+  final ja.AudioPlayer _player;
+
+  bool _stopped = false;
+  int _loadGeneration = 0;
+
+  bool _isCurrentLoad(int generation) =>
+      !_disposed && !_stopped && generation == _loadGeneration;
 
   String? _originalTitle;
   String? _originalArtist;
@@ -87,6 +93,7 @@ class SongloftAudioHandler extends BaseAudioHandler with SeekHandler {
   VoidCallback? onSkipToPrevious;
   VoidCallback? onSongCompleted;
   VoidCallback? onToggleFavorite;
+  Future<void> Function()? onTaskRemovedCallback;
 
   /// Android Auto 媒体浏览数据源（由 PlayerNotifier 注入）
   MediaBrowseDataSource? mediaBrowseDataSource;
@@ -113,7 +120,8 @@ class SongloftAudioHandler extends BaseAudioHandler with SeekHandler {
   StreamSubscription<AudioInterruptionEvent>? _interruptionSub;
   bool _disposed = false;
 
-  SongloftAudioHandler() {
+  SongloftAudioHandler({ja.AudioPlayer? player})
+    : _player = player ?? ja.AudioPlayer() {
     // 使用 listen + add 而非 pipe()：pipe() 内部调用 addStream 独占 sink，
     // 导致 super.stop() 等方法无法再调用 playbackState.add()，
     // 退出时抛出 "You cannot add items while items are being added from addStream"。
@@ -152,7 +160,7 @@ class SongloftAudioHandler extends BaseAudioHandler with SeekHandler {
       (state) {
         if (_disposed) return;
         debugPrint('[AudioService] processingState 变化: $state');
-        if (state == ja.ProcessingState.completed) {
+        if (!_stopped && state == ja.ProcessingState.completed) {
           try {
             onSongCompleted?.call();
           } catch (e) {
@@ -211,7 +219,7 @@ class SongloftAudioHandler extends BaseAudioHandler with SeekHandler {
           }
         } else {
           // 中断结束：如果之前正在播放，则恢复
-          if (wasPlayingBeforeInterruption) {
+          if (wasPlayingBeforeInterruption && !_stopped) {
             _player.play();
           }
         }
@@ -285,32 +293,28 @@ class SongloftAudioHandler extends BaseAudioHandler with SeekHandler {
     _broadcastState();
   }
 
-  /// 通知栏「退出」按钮：停止播放并移除通知（songloft-org/songloft#452）。
-  /// 必须用 customAction 确保 audio_service 在通知栏渲染为可见按钮
-  /// （MediaControl.stop 只注册系统媒体键，不生成可见按钮）。
+  /// 标准停止动作在 Android 12 及以下进入通知按钮列表，audio_service 在
+  /// Android 13+ 自动把它转换为系统面板的自定义停止动作。无需另加 customAction，
+  /// 否则旧版缺少通知按钮、新版可能重复。停止播放不退出正在浏览的界面。
   /// androidIcon 用 audio_service 包自带的 audio_service_stop（任何 APK 都存在），
   /// 避免依赖应用新增 res 资源——CI Gradle 缓存或热更场景下新增 drawable 可能缺失，
   /// 导致 getIdentifier() 返回 0、CustomAction.Builder 抛 IllegalArgumentException
   /// 使整个通知栏 customAction（退出 + 收藏）全部不显示（songloft-org/songloft#329）。
   static const _stopControl = MediaControl(
     androidIcon: 'drawable/audio_service_stop',
-    label: 'Exit',
+    label: 'Stop',
     action: MediaAction.stop,
-    customAction: CustomMediaAction(name: 'stopPlayback'),
   );
 
   /// 依据 `_player` 当前快照构建一份 audio_service [PlaybackState]。
   /// 抽出成独立方法，供 playbackEventStream 转换与 play/pause 等动作后的主动重播共用。
   PlaybackState _buildPlaybackState() {
     return PlaybackState(
-      controls: [
-        MediaControl.skipToPrevious,
-        if (_player.playing) MediaControl.pause else MediaControl.play,
-        if (_favoriteControlSupported)
-          _isCurrentSongFavorited ? _unfavoriteControl : _favoriteControl,
-        MediaControl.skipToNext,
-        _stopControl,
-      ],
+      controls: buildMediaControls(
+        playing: !_stopped && _player.playing,
+        favoriteSupported: _favoriteControlSupported,
+        favorited: _isCurrentSongFavorited,
+      ),
       // 显式声明 play/pause/skip 系统动作：Android 13+ 通知与灵动岛/锁屏的媒体控件由系统
       // 依据 MediaSession 的 action 位渲染，除 controls 带入的动作外再补一层，确保上一首/
       // 下一首/播放暂停在系统媒体面板上恒为可用（songloft-org/songloft-player#23）。
@@ -328,25 +332,41 @@ class SongloftAudioHandler extends BaseAudioHandler with SeekHandler {
       // 索引是**通知 action 列表**（audio_service 原生侧的 nativeActions）的下标，不是上面
       // controls 的下标：带 customAction 的控件（收藏）会被拿去做 PlaybackState 的
       // CustomAction，**不进**通知 action 列表。故无论收藏按钮在不在，通知 action 恒为
-      // [上一首, 播放/暂停, 下一首] 三个，紧凑视图只能取 0/1/2。
+      // Android 12 及以下为 [上一首, 播放/暂停, 下一首, 停止]；13+ 的停止会自动
+      // 转换为自定义动作。两种通知的紧凑视图均取 0/1/2。
       // 写成 [0,1,3] 会让 Android 12 及以下的 SystemUI 渲染紧凑视图时数组越界 →
       // 整条通知不显示（songloft-org/songloft#329）。
       androidCompactActionIndices: const [0, 1, 2],
       processingState:
-          const {
-            ja.ProcessingState.idle: AudioProcessingState.idle,
-            ja.ProcessingState.loading: AudioProcessingState.loading,
-            ja.ProcessingState.buffering: AudioProcessingState.buffering,
-            ja.ProcessingState.ready: AudioProcessingState.ready,
-            ja.ProcessingState.completed: AudioProcessingState.completed,
-          }[_player.processingState]!,
-      playing: _player.playing,
+          _stopped
+              ? AudioProcessingState.idle
+              : const {
+                ja.ProcessingState.idle: AudioProcessingState.idle,
+                ja.ProcessingState.loading: AudioProcessingState.loading,
+                ja.ProcessingState.buffering: AudioProcessingState.buffering,
+                ja.ProcessingState.ready: AudioProcessingState.ready,
+                ja.ProcessingState.completed: AudioProcessingState.completed,
+              }[_player.processingState]!,
+      playing: !_stopped && _player.playing,
       updatePosition: _player.position,
       bufferedPosition: _player.bufferedPosition,
       speed: _player.speed,
       queueIndex: 0,
     );
   }
+
+  @visibleForTesting
+  static List<MediaControl> buildMediaControls({
+    required bool playing,
+    required bool favoriteSupported,
+    required bool favorited,
+  }) => [
+    MediaControl.skipToPrevious,
+    if (playing) MediaControl.pause else MediaControl.play,
+    if (favoriteSupported) favorited ? _unfavoriteControl : _favoriteControl,
+    MediaControl.skipToNext,
+    _stopControl,
+  ];
 
   /// 立即用当前播放器快照刷新一次 playbackState（供通知栏动作后强制同步系统媒体控件）。
   void _broadcastState() {
@@ -359,6 +379,8 @@ class SongloftAudioHandler extends BaseAudioHandler with SeekHandler {
 
   @override
   Future<void> play() async {
+    if (_disposed) return;
+    _stopped = false;
     debugPrint(
       '[AudioService] ▶️ play() 被调用 (before: playing=${_player.playing}, '
       'ps=${_player.processingState})',
@@ -405,14 +427,33 @@ class SongloftAudioHandler extends BaseAudioHandler with SeekHandler {
   Future<void> stop() async {
     if (_disposed) return;
     debugPrint('[AudioService] ⏹️ stop() 被调用');
+    // 底层迟到的 ready/completed 事件不能重新建立通知或触发自动切歌。
+    _stopped = true;
+    _loadGeneration++;
+    _broadcastState();
     // Web HLS 视频主控模式：just_audio 无音源，停止 video 元素
     if (hlsVideoPrimaryMode && onStopHlsVideo != null) {
       onStopHlsVideo!();
       hlsVideoPrimaryMode = false;
       hlsVideoUrl = null;
     }
-    await _player.stop();
-    return super.stop();
+    try {
+      await _player.stop();
+    } finally {
+      // 即使底层停止失败，也必须释放前台通知和系统媒体会话。
+      playbackState.add(playbackState.value.copyWith(playing: false));
+      await super.stop();
+    }
+  }
+
+  @override
+  Future<void> onTaskRemoved() async {
+    final callback = onTaskRemovedCallback;
+    if (callback != null) {
+      await callback();
+    } else {
+      await stop();
+    }
   }
 
   @override
@@ -627,8 +668,11 @@ class SongloftAudioHandler extends BaseAudioHandler with SeekHandler {
     int? audioTrack,
     bool normalize = false,
   }) async {
-    // 确保 stream listeners 已建立
+    // 确保 stream listeners 已建立；停止或新切歌使本次异步加载失效。
+    final generation = ++_loadGeneration;
+    _stopped = false;
     await _initFuture;
+    if (!_isCurrentLoad(generation)) return;
 
     debugPrint(
       '[Player] SongloftAudioHandler.playSong: ${song.title} (type: ${song.type})',
@@ -727,6 +771,7 @@ class SongloftAudioHandler extends BaseAudioHandler with SeekHandler {
           !AudioFormatHelper.isWebCompatibleVideo(song.format, song.filePath)) {
         // 先 stop 释放之前的 audio 源（如果有）
         await _player.stop();
+        if (!_isCurrentLoad(generation)) return;
         hlsVideoPrimaryMode = true;
         hlsVideoUrl = songUrl;
         _updateNowPlaying(song);
@@ -764,6 +809,7 @@ class SongloftAudioHandler extends BaseAudioHandler with SeekHandler {
       }
       final cachedPath =
           cacheLoaded ? await cache.resolvePlayablePath(song.id) : null;
+      if (!_isCurrentLoad(generation)) return;
       lastPlaybackSource =
           cachedPath != null
               ? PlaybackSource.localCache
@@ -811,6 +857,7 @@ class SongloftAudioHandler extends BaseAudioHandler with SeekHandler {
           // 递归改写所有子资源经本机代理 → 全程 trust-all（songloft-org/songloft#272）。
           // 桌面端音频直播不走此分支（保留 #249 的 hlsDirect 直连源站逻辑，避免回归）。
           var proxied = await InsecureMediaProxy.instance.wrapHls(songUrl);
+          if (!_isCurrentLoad(generation)) return;
           // wrapHls 的入口 URL 只保留 path（query 丢失），视频源需补回 media=video
           // 供 SongloftMediaKitPlayer 判定创建视频纹理，否则黑屏只出声。
           if (song.isVideo) {
@@ -841,6 +888,7 @@ class SongloftAudioHandler extends BaseAudioHandler with SeekHandler {
           // normalize 流可能是 chunked（均衡产物未就绪时边转边发），用显式 cacheFile
           // 以便切歌时检测并清理不完整数据（songloft-org/songloft-player#35）。
           final dir = await getTemporaryDirectory();
+          if (!_isCurrentLoad(generation)) return;
           final normDir = Directory('${dir.path}/songloft_norm_cache');
           if (!normDir.existsSync()) normDir.createSync(recursive: true);
           final cacheFile = File('${normDir.path}/${song.id}.audio');
@@ -869,6 +917,7 @@ class SongloftAudioHandler extends BaseAudioHandler with SeekHandler {
       // audio_service 在 idle+playing=false 时可能停止前台 Service，
       // 导致之后的 mediaItem.add() 无法刷新到通知栏。
       // 提前更新 mediaItem，确保通知栏在 Service 重建时能读取到正确的元数据。
+      if (!_isCurrentLoad(generation)) return;
       _updateNowPlaying(song);
 
       // 所有平台（含 Web）均不调用 stop()，setAudioSource() 会自动替换当前源。
@@ -891,6 +940,7 @@ class SongloftAudioHandler extends BaseAudioHandler with SeekHandler {
 
       debugPrint('[Player] SongloftAudioHandler: setting audio source');
       await _setAudioSourceWithGuard(source, song);
+      if (!_isCurrentLoad(generation)) return;
 
       debugPrint('[Player] SongloftAudioHandler: starting playback');
       // 注意：just_audio 的 play() Future 在播放停止时才完成，不能 await，否则会阻塞调用链
@@ -905,6 +955,7 @@ class SongloftAudioHandler extends BaseAudioHandler with SeekHandler {
       );
       // 不再需要手动调用 _broadcastState()，pipe() 会自动同步
     } catch (e) {
+      if (!_isCurrentLoad(generation)) return;
       debugPrint('[Player] SongloftAudioHandler.playSong error: $e');
       rethrow;
     }
@@ -922,7 +973,9 @@ class SongloftAudioHandler extends BaseAudioHandler with SeekHandler {
     required bool resumePlaying,
     String? quality,
   }) async {
+    final generation = ++_loadGeneration;
     await _initFuture;
+    if (!_isCurrentLoad(generation)) return;
     if (song.url == null || song.url!.isEmpty) return;
     final url = UrlHelper.buildSongUrl(
       song.url!,
@@ -933,6 +986,7 @@ class SongloftAudioHandler extends BaseAudioHandler with SeekHandler {
     debugPrint('[Player] switchWebAudioTrack: track=$trackIndex url=$url');
     final source = ja.AudioSource.uri(Uri.parse(url));
     await _player.setAudioSource(source, initialPosition: position);
+    if (!_isCurrentLoad(generation)) return;
     if (resumePlaying) {
       unawaited(
         _player.play().catchError((e) {

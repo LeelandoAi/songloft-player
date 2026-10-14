@@ -1,6 +1,20 @@
-# 歌词页屏幕常亮 · songloft-org/songloft#520
+# 歌词页屏幕常亮与退出应用 · songloft-org/songloft#520
 
-2026-10-14。范围为客户端常亮配置；退出/清后台问题按用户要求暂不处理。
+2026-10-14。最初批次只实现常亮配置；后续退出修复记录见下方，早期验证对象保留。
+
+## 后续：Android 退出与通知停止
+
+2026-10-15 完成交付检查；本批调查/实现跨 10 月 14–15 日。
+
+基线 `3860205b0d8cf8449d8cf31746c254ef597c55e3` + 未提交工作树。源码 SHA-256 `a4096442900eb8a067cad0ca8305056737b1400e3124f7164fcb59514c95b2bb`（算法/范围见验收 JSON）。用户已确认开发版开启歌词常亮后正常，本批处理其后续退出反馈。
+
+- 「设置 → 账户 → 退出应用」停止音频、隐藏悬浮歌词、停止 Bundle 后端，再关闭 Android 任务与进程，保留登录和本机偏好；重复点击共用一次清理，单个步骤报错或超时不阻止其他清理。划掉任务调用同一流程。Home/普通切后台仍继续播放。
+- 标准媒体 STOP 在 audio_service 0.18.19 的 Android 12 及以下进入普通通知按钮；Android 13+ 自动转换为系统自定义 STOP。额外自定义按钮会使旧系统缺按钮，重复注册则在新系统重复。通知停止只停止播放并移除通知，保留正在浏览的界面。
+- 原生结束任务走既有悬浮歌词 `exec` 的 `exitApp` 子命令，无新增 MethodChannel 方法名或原生插件。旧 APK 不识别子命令时退回停止资源、SystemNavigator.pop 与结束进程；完整任务移除以新 APK 为准。新入口仅 Android 显示。
+- 停止状态拒绝底层迟到 ready/completed 与旧异步加载，避免通知复活/自动切歌。本地 [audio_service 0.18.19 补丁](../../third_party/audio_service/README.md)在 stop 时先移除前台状态并释放唤醒锁：界面仍绑定服务时，不能依赖 onDestroy 才清理。此原生修复需要完整 APK。
+- Linux / Flutter 3.44.8 / Dart 3.12.2：格式、静态分析、完整 708 项测试与 Debug APK 编译通过。停止回归覆盖迟到事件、完成回调、初始化等待与待完成音源；删除停止状态后 2 项目标回归失败，缺少标准 STOP 时 4 项失败。日志 `/tmp/songloft-520-exit-flutter-{analyze-final,tests-final,apk4}.log`、`/tmp/songloft-520-stop-lifecycle-{final,negative}.log`。本批工作树标识/APK 哈希与验收清单见 `/tmp/songloft-520-exit-validation.json`。
+- Android API 34 模拟器，明确 x86_64 安装，1080×1920/density 440，隔离服务器与合成音频：通知面板只有一个 STOP；播放中点击停止后 playing=false、媒体失活、活动通知=0、startRequested=false，界面绑定记录可保留且重新点歌恢复播放。播放中账户退出与从最近任务划掉后 PID、活动服务和通知归零；重开恢复登录。证据 `/tmp/songloft-520-flutter-{stop-before,stop-after,replay,exit-before,exit-after,task-before,task-after}-final.json`。
+- Not run：鸿蒙 4.2 真机、Android 12 及以下实际通知布局、Bundle Android 内嵌后端实际退出、实际开启悬浮歌词时退出、iOS/桌面原生构建；标准 APK 和模拟器不能替代这些验收。2026-10-15 用户已授权提交、推送和回复 Issue；最终 SHA、开发包与 CI 状态以 Git/同一 SHA 工作流为准，本批不打正式版 tag。
 
 ## 行为
 

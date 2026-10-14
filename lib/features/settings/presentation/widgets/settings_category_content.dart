@@ -29,6 +29,7 @@ import '../../../player/presentation/providers/mini_player_controls_provider.dar
 import '../../../playlist/presentation/providers/playlist_provider.dart';
 import '../../../jsplugin/presentation/widgets/jsplugin_manager.dart';
 import '../../../../core/backend/run_mode_provider.dart';
+import '../../../../core/platform/app_exit.dart';
 import '../../data/log_export_service.dart';
 import '../providers/lyrics_keep_screen_on_provider.dart';
 import '../../data/upgrade_api.dart';
@@ -778,6 +779,7 @@ class _SettingsCategoryContentState
 
   List<Widget> _buildAccountItems() {
     final l10n = AppLocalizations.of(context);
+    final appExit = ref.watch(appExitControllerProvider);
     return [
       SectionCard(
         title: l10n.settingsCategoryAccountTitle,
@@ -821,6 +823,15 @@ class _SettingsCategoryContentState
             trailing: const Icon(Icons.chevron_right),
             onTap: _showLogoutDialog,
           ),
+          if (appExit != null) ...[
+            const Divider(height: 1),
+            ListTile(
+              leading: const Icon(Icons.power_settings_new),
+              title: Text(l10n.settingsExitApp),
+              subtitle: Text(l10n.settingsExitAppSubtitle),
+              onTap: appExit.exit,
+            ),
+          ],
         ],
       ),
     ];

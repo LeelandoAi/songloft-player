@@ -1,6 +1,20 @@
-# Keep Screen On for Lyrics · songloft-org/songloft#520
+# Keep Screen On for Lyrics and Exit App · songloft-org/songloft#520
 
-2026-10-14. Scope: the client screen-awake preference. Exit/task-removal behavior is deferred at the user's request.
+2026-10-14. The first batch implemented only the screen-awake preference. The follow-up exit changes are recorded below; earlier validation objects remain preserved.
+
+## Follow-up: Android Exit and Notification Stop
+
+Final delivery checks completed on 2026-10-15; investigation/implementation span October 14–15.
+
+Baseline `3860205b0d8cf8449d8cf31746c254ef597c55e3` plus the uncommitted working tree. Source SHA-256 `a4096442900eb8a067cad0ca8305056737b1400e3124f7164fcb59514c95b2bb` (algorithm/scope in the validation JSON). The reporter confirmed lyrics stay awake after enabling the development build preference; this batch addresses their follow-up exit report.
+
+- Settings → Account → Exit app stops audio, hides floating lyrics, stops the Bundle backend, and closes the Android task/process while retaining sign-in and local preferences. Repeated requests share one cleanup; errors/timeouts do not prevent subsequent steps. Removing the task uses the same flow. Home/ordinary backgrounding still continues playback.
+- In audio_service 0.18.19, standard media STOP becomes a notification action on Android 12 and earlier and automatically becomes a system custom STOP on Android 13+. An explicit custom control loses the older notification button; registering both duplicates the newer action. Notification Stop stops playback and removes the notification while keeping the browsing UI.
+- Native task termination uses the existing floating-lyrics `exec` method with subcommand `exitApp`, without adding MethodChannel names or plugins. Older APKs fall back to stopping resources, SystemNavigator.pop and process termination; complete task removal requires the new APK. The new entry is Android-only.
+- Explicit stop state rejects late ready/completed events and stale asynchronous loads, preventing notification revival/auto-advance. The local [audio_service 0.18.19 patch](../../third_party/audio_service/README.en.md) removes foreground mode and releases the wake lock during stop: an Activity binding means cleanup cannot wait for onDestroy. This native fix requires a complete APK.
+- Linux / Flutter 3.44.8 / Dart 3.12.2: formatting, analysis, all 708 tests and Debug APK compilation pass. Stop regressions cover late events, completion callbacks, initialization waits and pending sources. Removing stop state fails 2 target regressions; removing standard STOP fails 4. Logs: `/tmp/songloft-520-exit-flutter-{analyze-final,tests-final,apk4}.log`, `/tmp/songloft-520-stop-lifecycle-{final,negative}.log`. Working-tree identity, APK hashes and acceptance checklist: `/tmp/songloft-520-exit-validation.json`.
+- Android API 34 emulator, explicitly installed as x86_64, 1080×1920/density 440, isolated server and synthetic audio: one notification STOP. Clicking it during playback yields playing=false, inactive media, zero active notifications and startRequested=false. The UI's binding may remain; selecting another song restores playback. Account exit during playback and swiping the recent task remove PID, active services and notification; relaunch preserves login. Evidence: `/tmp/songloft-520-flutter-{stop-before,stop-after,replay,exit-before,exit-after,task-before,task-after}-final.json`.
+- Not run: HarmonyOS 4.2 hardware, actual Android 12-or-earlier notification layout, Bundle Android backend shutdown, exit with floating lyrics actually enabled, iOS/desktop native builds. Standard APK/emulator checks do not replace these. On 2026-10-15 the user authorized commits, pushes and an Issue reply. Final SHAs, development packages and CI status are determined by Git and workflows for the same SHA; no stable tag is created.
 
 ## Behavior
 

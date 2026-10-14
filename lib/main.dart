@@ -5,6 +5,7 @@ import 'package:audio_service/audio_service.dart';
 import 'package:audio_service_mpris/audio_service_mpris.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 import 'package:flutter_patcher/flutter_patcher.dart';
@@ -27,6 +28,7 @@ import 'core/backend/embedded_backend_service.dart';
 import 'core/network/dio_insecure.dart' show applyGlobalInsecureHttpOverrides;
 
 import 'core/platform/home_widget_service.dart';
+import 'core/platform/app_exit.dart';
 import 'core/storage/app_preferences.dart';
 import 'core/storage/secure_storage.dart';
 import 'core/tracely/tracely_client.dart';
@@ -41,6 +43,7 @@ import 'core/utils/webgl_context_recovery.dart';
 import 'core/utils/webview_environment.dart';
 import 'core/utils/window_tray_manager.dart';
 import 'features/desktop_lyric/desktop_lyric_ipc.dart';
+import 'features/desktop_lyric/android_floating_lyric_controller.dart';
 import 'features/desktop_lyric/desktop_lyric_main.dart';
 import 'features/player/presentation/widgets/player_shortcut_scope.dart';
 import 'features/settings/presentation/providers/settings_provider.dart';
@@ -441,6 +444,31 @@ void main(List<String> args) async {
     debugPrint('[Main] 玻璃 shader 初始化失败，使用毛玻璃: $e');
   }
 
+  AppExitController? appExitController;
+  if (!kIsWeb && Platform.isAndroid) {
+    appExitController = AppExitController(
+      stopPlayback: audioHandler.stop,
+      closeLyrics: () => floatingLyricChannel.invokeMethod<void>('hide'),
+      stopBackend: () async {
+        if (AppConfig.hasEmbeddedBackend) await EmbeddedBackendService.stop();
+      },
+      finishApp: () async {
+        try {
+          final handled = await floatingLyricChannel.invokeMethod<bool>(
+            'exec',
+            {'cmd': 'exitApp'},
+          );
+          if (handled == true) return;
+        } on MissingPluginException {
+          // 旧 APK 的 exec 不认识此命令，仍可停止服务并退出。
+        }
+        await SystemNavigator.pop();
+        forceTerminateProcess(0);
+      },
+    );
+    audioHandler.onTaskRemovedCallback = appExitController.exit;
+  }
+
   runApp(
     LiquidGlassWidgets.wrap(
       brightnessResolver: Theme.maybeBrightnessOf,
@@ -448,6 +476,7 @@ void main(List<String> args) async {
         overrides: [
           // 将 audioHandler 注入到 Riverpod 中
           audioHandlerProvider.overrideWithValue(audioHandler),
+          appExitControllerProvider.overrideWithValue(appExitController),
         ],
         child: StartupGate(
           child: SongloftApp(glassShadersReady: glassShadersReady),

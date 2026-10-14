@@ -90,6 +90,9 @@ dependencies:
   lpinyin: ^2.0.3
 
 dependency_overrides:
+  # Android：停止时清掉仍绑定服务的前台通知与唤醒锁（songloft-org/songloft#520）。
+  audio_service:
+    path: third_party/audio_service
   # Windows WebView2：辅助 HWND 移动后通知控制器（songloft-org/songloft#499）。
   flutter_inappwebview_windows:
     path: third_party/flutter_inappwebview_windows

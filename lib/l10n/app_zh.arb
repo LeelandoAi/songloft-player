@@ -2369,6 +2369,8 @@
   "settingsAccountServer": "服务器",
   "settingsNoMusicDir": "未选择音乐目录",
   "settingsLogout": "退出登录",
+  "settingsExitApp": "退出应用",
+  "settingsExitAppSubtitle": "停止播放、关闭通知与后台服务，保留登录状态",
   "settingsLogoutConfirmTitle": "确认退出",
   "settingsLogoutConfirmContent": "确定要退出当前账户吗？",
   "settingsLogoutButton": "确认退出",

@@ -10,6 +10,16 @@ Include rule, scope, full owner/repo#number, failure/fix commit SHAs, actual val
 
 ## Entries
 
+### AUDIO-001: Check SDK conversion by Android version for notification Stop
+
+- Scope: Flutter audio_service notifications and Android system media panels, songloft-org/songloft#520.
+- Rule: Inspect the locked version's `createCustomAction`, notification-action list and platform conversion; a Dart customAction field does not prove rendering on every Android version.
+- Evidence: On 2026-10-14, baseline `3860205b0d8cf8449d8cf31746c254ef597c55e3` used an explicit custom Stop, excluded from audio_service 0.18.19's ordinary notification list. This batch initially added standard STOP as well; API 34 showed two Stop actions. The library already converts standard STOP to a custom STOP on Android 13+, making dual registration redundant.
+- Done right: Keep standard STOP alone, supplying the older notification action and one newer panel action. Removing it in an isolated copy fails four regressions, which pass with the fix. Final API 34/x86_64 playback reports one Stop; Account exit during playback removes PID, services and notification. Evidence: `/tmp/songloft-520-flutter-{single-stop,final-playing,playing-exit}.json`; working-tree object: [#520 record](docs/en/issue-520.md).
+- Stop lifecycle: actual API 34 checks found late ready/completed events could republish active playback, and an Activity binding prevented upstream stopSelf() from destroying the service, retaining its foreground notification/wake lock. Dart's stop state rejects stale loads/completion callbacks; local audio_service 0.18.19 ends foreground mode and releases the wake lock in stop(). After stopping: zero notifications, inactive session, startRequested=false; selecting a song restores playback. This remains one incident.
+- Not run: HarmonyOS 4.2 hardware notification layout; API 34 does not replace that acceptance.
+- Seen 1× (2026-10-14). Status: lesson; fix remains uncommitted, emulator results do not imply release availability.
+
 ### WIN-001: Auxiliary window coordinate tests do not verify WebView2 desktop input
 
 - Scope: Windows plugin WebView2, cross-monitor movement, and mouse input in abandoned screen regions.

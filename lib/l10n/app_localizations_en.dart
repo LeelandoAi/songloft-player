@@ -3940,6 +3940,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsLogout => 'Log out';
 
   @override
+  String get settingsExitApp => 'Exit app';
+
+  @override
+  String get settingsExitAppSubtitle =>
+      'Stop playback, notifications and background services; stay signed in';
+
+  @override
   String get settingsLogoutConfirmTitle => 'Confirm log out';
 
   @override

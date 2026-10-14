@@ -3762,6 +3762,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsLogout => '退出登录';
 
   @override
+  String get settingsExitApp => '退出应用';
+
+  @override
+  String get settingsExitAppSubtitle => '停止播放、关闭通知与后台服务，保留登录状态';
+
+  @override
   String get settingsLogoutConfirmTitle => '确认退出';
 
   @override

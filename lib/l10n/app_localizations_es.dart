@@ -3996,6 +3996,13 @@ class AppLocalizationsEs extends AppLocalizations {
   String get settingsLogout => 'Cerrar sesión';
 
   @override
+  String get settingsExitApp => 'Salir de la aplicación';
+
+  @override
+  String get settingsExitAppSubtitle =>
+      'Detener la reproducción, las notificaciones y los servicios sin cerrar sesión';
+
+  @override
   String get settingsLogoutConfirmTitle => 'Confirmar cierre de sesión';
 
   @override

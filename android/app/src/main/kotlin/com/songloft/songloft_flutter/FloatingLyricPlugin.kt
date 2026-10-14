@@ -89,7 +89,18 @@ class FloatingLyricPlugin(
         // if/else dispatch (NOT when) — new sub-commands here won't trigger
         // contract hash changes because compute_native_contract.sh only captures
         // "x" -> patterns (when branches) and call.method == "x" comparisons.
-        if (!cacheStorage.handle(call, result)) result.notImplemented()
+        if (call.argument<String>("cmd") == "exitApp") {
+            removeOverlay()
+            result.success(true)
+            mainHandler.post {
+                context.stopService(android.content.Intent(context, com.ryanheise.audioservice.AudioService::class.java))
+                val manager = context.getSystemService(android.content.Context.ACTIVITY_SERVICE) as android.app.ActivityManager
+                manager.appTasks.forEach { it.finishAndRemoveTask() }
+                // Dart cleanup has finished before calling exec. Allow the
+                // MethodChannel reply to return before ending the cached engine.
+                mainHandler.postDelayed({ android.os.Process.killProcess(android.os.Process.myPid()) }, 200)
+            }
+        } else if (!cacheStorage.handle(call, result)) result.notImplemented()
     }
 
     private fun handleShow(call: MethodCall, result: MethodChannel.Result) {
