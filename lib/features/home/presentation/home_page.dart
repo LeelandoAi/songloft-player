@@ -11,6 +11,7 @@ import '../../../core/theme/app_dimensions.dart';
 import '../../../core/theme/responsive.dart';
 import '../../../core/utils/url_helper.dart';
 import '../../../shared/widgets/empty_state.dart';
+import '../../../shared/widgets/browse_card.dart';
 import '../../library/presentation/providers/songs_provider.dart';
 import '../../playlist/domain/playlist.dart';
 import '../../player/presentation/providers/player_provider.dart';
@@ -53,7 +54,10 @@ class _HomePageState extends ConsumerState<HomePage> {
     if (_autoLoadCursor[type] == state.items.length) return;
     _autoLoadCursor[type] = state.items.length;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
+      if (!mounted ||
+          (type == 'radio' && !ref.read(homeRadioVisibilityProvider))) {
+        return;
+      }
       ref
           .read(playlistListProvider(PlaylistListQuery(type: type)).notifier)
           .loadMore();
@@ -69,9 +73,13 @@ class _HomePageState extends ConsumerState<HomePage> {
     final normalAsync = ref.watch(
       playlistListProvider(const PlaylistListQuery(type: 'normal')),
     );
-    final radioAsync = ref.watch(
-      playlistListProvider(const PlaylistListQuery(type: 'radio')),
-    );
+    final showRadios = ref.watch(homeRadioVisibilityProvider);
+    final radioAsync =
+        showRadios
+            ? ref.watch(
+              playlistListProvider(const PlaylistListQuery(type: 'radio')),
+            )
+            : null;
 
     // 首次加载 = 既没数据也没错误。下拉刷新时 Riverpod 保留旧值（hasValue 仍为
     // true），因此刷新不会把内容打回骨架屏。
@@ -79,15 +87,24 @@ class _HomePageState extends ConsumerState<HomePage> {
     // 用它会让加载失败永久停在骨架屏。
     final isFirstLoad =
         (!normalAsync.hasValue && !normalAsync.hasError) ||
-        (!radioAsync.hasValue && !radioAsync.hasError);
+        (showRadios && !radioAsync!.hasValue && !radioAsync.hasError);
     // 只有两类都失败才整页报错；一类失败另一类有数据时降级为分区内联错误。
-    final bothFailed = normalAsync.hasError && radioAsync.hasError;
+    final bothFailed =
+        normalAsync.hasError && (!showRadios || radioAsync!.hasError);
 
-    // 「不限行数」才需要续拉；窄屏走轮播、该设置按约定不生效，也就不额外发请求。
+    final layout = ref
+        .watch(homePlaylistLayoutProvider)
+        .resolve(context.useWideLayout);
     final autoLoadAll =
-        context.useWideLayout && ref.watch(homeGridConfigProvider).isAllRows;
+        layout == HomePlaylistLayout.list ||
+        (layout == HomePlaylistLayout.grid &&
+            ref.watch(homeGridConfigProvider).isAllRows);
     _maybeAutoLoadAll('normal', normalAsync.value, enabled: autoLoadAll);
-    _maybeAutoLoadAll('radio', radioAsync.value, enabled: autoLoadAll);
+    _maybeAutoLoadAll(
+      'radio',
+      radioAsync?.value,
+      enabled: autoLoadAll && showRadios,
+    );
 
     void retryAll() {
       // 清游标：刷新后 items 退回第一页，不清的话续拉会被同条数去重挡住。
@@ -95,9 +112,11 @@ class _HomePageState extends ConsumerState<HomePage> {
       ref.invalidate(
         playlistListProvider(const PlaylistListQuery(type: 'normal')),
       );
-      ref.invalidate(
-        playlistListProvider(const PlaylistListQuery(type: 'radio')),
-      );
+      if (showRadios) {
+        ref.invalidate(
+          playlistListProvider(const PlaylistListQuery(type: 'radio')),
+        );
+      }
       // 底部统计面板与歌单区同一次下拉刷新：它是常驻 provider（非 autoDispose），
       // 不 invalidate 就会永远停在首次加载时的数字上。
       ref.invalidate(libraryStatsProvider);
@@ -119,16 +138,16 @@ class _HomePageState extends ConsumerState<HomePage> {
                       : bothFailed
                       ? _ErrorContent(
                         error:
-                            (normalAsync.error ?? radioAsync.error).toString(),
+                            (normalAsync.error ?? radioAsync?.error).toString(),
                         onRetry: retryAll,
                       )
                       : _buildContent(
                         context,
                         ref,
                         normalPlaylists: normalAsync.value?.items ?? const [],
-                        radioPlaylists: radioAsync.value?.items ?? const [],
+                        radioPlaylists: radioAsync?.value?.items ?? const [],
                         normalFailed: normalAsync.hasError,
-                        radioFailed: radioAsync.hasError,
+                        radioFailed: radioAsync?.hasError ?? false,
                       ),
             ),
           ],
@@ -167,8 +186,8 @@ class _HomePageState extends ConsumerState<HomePage> {
       );
     }
 
-    // 全站统一的宽屏布局判断（宽屏走网格，窄屏走轮播），见 context.useWideLayout
     final isWide = context.useWideLayout;
+    final layout = ref.watch(homePlaylistLayoutProvider).resolve(isWide);
 
     return Center(
       child: ConstrainedBox(
@@ -182,6 +201,7 @@ class _HomePageState extends ConsumerState<HomePage> {
             if (normalPlaylists.isNotEmpty || normalFailed) ...[
               SectionHeader(
                 title: l10n.homeMyPlaylists,
+                trailing: _buildLayoutMenu(context),
                 actionText: l10n.homeViewAll,
                 // 跳转到曲库的「全部歌单」视图；即使该视图在自定义配置里被隐藏也能到达。
                 onAction:
@@ -197,7 +217,14 @@ class _HomePageState extends ConsumerState<HomePage> {
                         ),
                       ),
                 )
-              else if (isWide)
+              else if (layout == HomePlaylistLayout.list)
+                _buildPlaylistList(
+                  context,
+                  normalPlaylists,
+                  currentPlaylistId,
+                  isPlaying,
+                )
+              else if (layout == HomePlaylistLayout.grid)
                 _PlaylistGrid(
                   playlists: normalPlaylists,
                   currentPlaylistId: currentPlaylistId,
@@ -219,6 +246,7 @@ class _HomePageState extends ConsumerState<HomePage> {
             if (radioPlaylists.isNotEmpty || radioFailed) ...[
               SectionHeader(
                 title: l10n.homeMyRadios,
+                trailing: _buildLayoutMenu(context),
                 icon: Icons.radio_rounded,
                 actionText: l10n.homeViewAll,
                 // 跳转到曲库的「电台歌单」视图；网格按行数截断后用户需要这个出口。
@@ -237,7 +265,14 @@ class _HomePageState extends ConsumerState<HomePage> {
                         ),
                       ),
                 )
-              else if (isWide)
+              else if (layout == HomePlaylistLayout.list)
+                _buildPlaylistList(
+                  context,
+                  radioPlaylists,
+                  currentPlaylistId,
+                  isPlaying,
+                )
+              else if (layout == HomePlaylistLayout.grid)
                 _PlaylistGrid(
                   playlists: radioPlaylists,
                   currentPlaylistId: currentPlaylistId,
@@ -267,6 +302,61 @@ class _HomePageState extends ConsumerState<HomePage> {
             SizedBox(height: context.navScrollInset),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildLayoutMenu(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final selected = ref.watch(homePlaylistLayoutProvider);
+    final labels = <HomePlaylistLayout, String>{
+      HomePlaylistLayout.adaptive: l10n.homeLayoutAdaptive,
+      HomePlaylistLayout.carousel: l10n.homeLayoutCarousel,
+      HomePlaylistLayout.grid: l10n.homeLayoutGrid,
+      HomePlaylistLayout.list: l10n.homeLayoutList,
+    };
+    return PopupMenuButton<HomePlaylistLayout>(
+      tooltip: l10n.homePlaylistLayout,
+      icon: const Icon(Icons.view_module_outlined),
+      initialValue: selected,
+      onSelected: ref.read(homePlaylistLayoutProvider.notifier).setLayout,
+      itemBuilder:
+          (context) => [
+            for (final layout in HomePlaylistLayout.values)
+              CheckedPopupMenuItem(
+                value: layout,
+                checked: selected == layout,
+                child: Text(labels[layout]!),
+              ),
+          ],
+    );
+  }
+
+  Widget _buildPlaylistList(
+    BuildContext context,
+    List<Playlist> playlists,
+    int? currentPlaylistId,
+    bool isPlaying,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+      child: Column(
+        children: [
+          for (final playlist in playlists)
+            BrowseCard(
+              layout: BrowseCardLayout.list,
+              title: playlist.name,
+              subtitle: AppLocalizations.of(
+                context,
+              ).homeSongCountShort(playlist.songCount),
+              coverUrl: playlist.coverImageUrl,
+              placeholderIcon: Icons.queue_music,
+              highlighted: playlist.id == currentPlaylistId,
+              highlightTitle: playlist.id == currentPlaylistId,
+              isPlaying: isPlaying && playlist.id == currentPlaylistId,
+              onTap: () => context.push('/playlists/${playlist.id}'),
+            ),
+        ],
       ),
     );
   }
@@ -339,7 +429,7 @@ class _GreetingAppBar extends ConsumerWidget {
   }
 }
 
-/// Tablet/Desktop 歌单网格布局。行列数可在设置 → 外观里配置
+/// 首页歌单网格布局。行列数可在设置 → 外观里配置
 /// （songloft-org/songloft#332）。
 class _PlaylistGrid extends ConsumerWidget {
   final List<Playlist> playlists;

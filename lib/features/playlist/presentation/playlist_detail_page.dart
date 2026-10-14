@@ -3,6 +3,7 @@ import 'dart:async';
 import '../../../shared/widgets/network_cover_image.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -29,6 +30,7 @@ import '../../player/presentation/widgets/play_history_sheet.dart';
 import '../../settings/presentation/providers/cache_download_provider.dart';
 import '../../settings/presentation/providers/song_cache_provider.dart';
 import '../domain/playlist.dart';
+import '../domain/use_cases/song_title_initial.dart';
 import 'providers/playlist_provider.dart';
 import 'widgets/playlist_edit_dialog.dart';
 import 'widgets/playlist_search_field.dart';
@@ -57,6 +59,7 @@ class _PlaylistDetailPageState extends ConsumerState<PlaylistDetailPage>
   static const double _songTileHeight = 72.0;
 
   late final ScrollController _scrollController;
+  final _songListKey = GlobalKey();
 
   /// 排序模式
   bool _isSortMode = false;
@@ -429,7 +432,64 @@ class _PlaylistDetailPageState extends ConsumerState<PlaylistDetailPage>
           estimatedItemHeight: _songTileHeight,
           headerExtent: headerExtent,
           enabled: !hide && total > 20,
-          labelBuilder: (index, t) => '$index / $t',
+          useScrollPositionForLabel: true,
+          labelBuilder: (index, t) {
+            final songs = songsAsync.value?.items ?? const <Song>[];
+            // 歌单描述、搜索栏与字号会改变 header 高度；从实际 sliver 布局
+            // 计算当前行，不能用固定 300px 的滚动估算来标注歌名。
+            final sliver = _songListKey.currentContext?.findRenderObject();
+            if (sliver is RenderSliver &&
+                _scrollController.hasClients &&
+                _scrollController.positions.length == 1 &&
+                songs.isNotEmpty) {
+              final visibleOffset =
+                  _scrollController.offset -
+                  sliver.constraints.precedingScrollExtent +
+                  (context.useWideLayout ? 0 : kToolbarHeight);
+              index = ((visibleOffset / _songTileHeight).floor() + 1).clamp(
+                1,
+                songs.length,
+              );
+            }
+            if (sliver is RenderSliverMultiBoxAdaptor && songs.isNotEmpty) {
+              final viewport = sliver.parent;
+              final clipTop =
+                  (viewport is RenderBox
+                      ? viewport.localToGlobal(Offset.zero).dy
+                      : 0.0) +
+                  (context.useWideLayout ? 0 : kToolbarHeight);
+              // 标签可能在下一次 viewport 布局前重建，补上新旧滚动偏移差。
+              final delta =
+                  _scrollController.offset >=
+                          sliver.constraints.precedingScrollExtent
+                      ? _scrollController.offset -
+                          sliver.constraints.precedingScrollExtent -
+                          sliver.constraints.scrollOffset
+                      : 0.0;
+              var child = sliver.firstChild;
+              while (child != null) {
+                // 以可见中心判定当前歌曲，跳过被顶栏遮到只剩边缘的上一行。
+                if (child.localToGlobal(Offset.zero).dy -
+                        delta +
+                        child.size.height / 2 >
+                    clipTop + 0.01) {
+                  final data =
+                      child.parentData as SliverMultiBoxAdaptorParentData;
+                  index = ((data.index ?? 0) + 1).clamp(1, songs.length);
+                  break;
+                }
+                child = sliver.childAfter(child);
+              }
+            }
+            if (index < 1 || index > songs.length) return '$index / $t';
+            final title = songs[index - 1].title;
+            final maxPreviewLength = context.isMobile ? 12 : 18;
+            final preview =
+                title.characters.length > maxPreviewLength
+                    ? '${title.characters.take(maxPreviewLength)}…'
+                    : title;
+            return '${songTitleInitial(title)} · $preview\n$index / $t';
+          },
           onDragToUnloaded:
               () =>
                   ref
@@ -1439,12 +1499,18 @@ class _PlaylistDetailPageState extends ConsumerState<PlaylistDetailPage>
 
     // 正常模式
     return SliverFixedExtentList(
+      key: _songListKey,
       itemExtent: _songTileHeight,
       delegate: SliverChildBuilderDelegate((context, index) {
         final song = songs[index];
+        final initial = songTitleInitial(song.title);
         return PlaylistSongTile(
           song: song,
           index: index + 1,
+          titleInitial:
+              index == 0 || songTitleInitial(songs[index - 1].title) != initial
+                  ? initial
+                  : null,
           onTap: () => _playSong(song, songs, index),
           onRemove: () => _removeSong(playlist.id, song),
           onDeleteFromLibrary: () => _deleteSongFromLibrary(song),

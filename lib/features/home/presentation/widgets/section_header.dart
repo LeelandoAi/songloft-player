@@ -18,6 +18,7 @@ class SectionHeader extends StatelessWidget {
 
   /// 图标（可选，显示在标题左侧）
   final IconData? icon;
+  final Widget? trailing;
 
   const SectionHeader({
     super.key,
@@ -25,6 +26,7 @@ class SectionHeader extends StatelessWidget {
     this.actionText,
     this.onAction,
     this.icon,
+    this.trailing,
   });
 
   @override
@@ -54,18 +56,22 @@ class SectionHeader extends StatelessWidget {
             ),
             const SizedBox(width: AppSpacing.sm),
           ],
-          Text(
-            title,
-            style: textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.bold,
-              fontSize: context.responsive<double>(
-                mobile: 20,
-                tablet: 22,
-                desktop: 24,
+          Expanded(
+            child: Text(
+              title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+                fontSize: context.responsive<double>(
+                  mobile: 20,
+                  tablet: 22,
+                  desktop: 24,
+                ),
               ),
             ),
           ),
-          const Spacer(),
+          if (trailing != null) trailing!,
           if (actionText != null && onAction != null)
             TextButton(
               onPressed: onAction,

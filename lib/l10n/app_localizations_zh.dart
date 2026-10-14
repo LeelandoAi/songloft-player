@@ -3524,7 +3524,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsHomeGridTitle => '首页歌单网格';
 
   @override
-  String get settingsHomeGridDesc => '宽屏首页「我的歌单 / 我的电台」每行显示几个、显示几行';
+  String get settingsHomeGridDesc => '首页「我的歌单 / 我的电台」宫格每行显示几个、显示几行';
 
   @override
   String get settingsHomeGridColumnsTitle => '每行数量';
@@ -3557,7 +3557,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsHomeGridClampHint => '窗口宽度不足时会自动减少每行数量，避免卡片过窄';
 
   @override
-  String get settingsHomeGridNarrowHint => '当前窗口较窄，首页歌单为横向滑动列表，此设置在窗口变宽后生效';
+  String get settingsHomeGridNarrowHint => '可在首页区域标题旁切换为宫格；行列设置仅对宫格生效';
 
   @override
   String get settingsFontScaleTitle => '字体大小';
@@ -4697,4 +4697,25 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get deviceCacheClearFailed => '清理缓存未完成，请检查目录权限和存储空间。未删除文件的缓存记录会保留。';
+
+  @override
+  String get homePlaylistLayout => '首页歌单布局';
+
+  @override
+  String get homeLayoutAdaptive => '自动布局';
+
+  @override
+  String get homeLayoutCarousel => '横向滑动';
+
+  @override
+  String get homeLayoutGrid => '宫格';
+
+  @override
+  String get homeLayoutList => '纵向列表';
+
+  @override
+  String get settingsHomeShowRadios => '显示电台区块';
+
+  @override
+  String get settingsHomeShowRadiosDesc => '在首页显示「我的电台」，选择保存在本机。';
 }

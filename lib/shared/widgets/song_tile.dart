@@ -21,6 +21,9 @@ class SongTile extends StatelessWidget {
   /// 展示用序号（1-based），showIndex 时显示。
   final int index;
 
+  /// 序号上方的浏览提示（如歌名拼音首字母），不改变歌曲标题。
+  final String? indexLabel;
+
   final bool showCover;
   final bool showIndex;
 
@@ -52,6 +55,7 @@ class SongTile extends StatelessWidget {
     super.key,
     required this.song,
     this.index = 0,
+    this.indexLabel,
     this.showCover = true,
     this.showIndex = false,
     this.showDragHandle = false,
@@ -136,12 +140,26 @@ class SongTile extends StatelessWidget {
       prefix.add(
         SizedBox(
           width: 32,
-          child: Text(
-            '$index',
-            style: textTheme.bodyMedium?.copyWith(
-              color: colorScheme.onSurfaceVariant,
-            ),
-            textAlign: TextAlign.center,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (indexLabel != null)
+                Text(
+                  indexLabel!,
+                  style: textTheme.labelLarge?.copyWith(
+                    color: colorScheme.primary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              Text(
+                '$index',
+                style: (indexLabel == null
+                        ? textTheme.bodyMedium
+                        : textTheme.labelSmall)
+                    ?.copyWith(color: colorScheme.onSurfaceVariant),
+                textAlign: TextAlign.center,
+              ),
+            ],
           ),
         ),
       );

@@ -1,5 +1,11 @@
 # Development Guide
 
+## Home playlist layouts and title initials
+
+The menu beside each home section offers automatic, carousel, grid and vertical list layouts, saved on this device. Automatic keeps mobile carousels and wide grids; all modes display song counts. Settings → Appearance → Home playlist grid includes Show radio section, enabled by default. Turning it off hides the entire home radio section; the choice is stored locally and can be enabled again. This section also controls columns and rows, including phone grids. Narrow widths reduce columns. All rows and vertical lists fetch approximately 200 playlists; View all opens the complete collection.
+
+Details retain song numbers and show an initial above the number at each contiguous group boundary. Chinese uses pinyin initials, Latin letters are uppercased, and digits, symbols and other scripts use `#`. Hints follow sorting and search without changing titles or playlist order. Dragging the scrollbar shows “initial · current title” and “position / total”, deriving the current row from the actual layout. Selection and manual sorting retain checkboxes and drag handles.
+
 See the [AI development workflow](ai-development.md) for continuous execution, validation evidence, cross-repository Issue triage, and retrospectives. Lessons live in root `LESSONS.md`. Commits, pushes, releases, and Issue writes follow explicit authorization.
 
 ## Navigation and plugins

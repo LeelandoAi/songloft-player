@@ -2150,7 +2150,7 @@
   "settingsMiniPlayerControlsPrevNext": "Previous / next",
   "settingsMiniPlayerControlsPrevNextMode": "Previous / next + play mode",
   "settingsHomeGridTitle": "Home playlist grid",
-  "settingsHomeGridDesc": "Columns and rows for the \"My playlists\" / \"My radios\" sections on the wide-screen home page",
+  "settingsHomeGridDesc": "Columns and rows for the home playlist and radio grids",
   "settingsHomeGridColumnsTitle": "Per row",
   "settingsHomeGridColumnsAuto": "Auto",
   "settingsHomeGridRowsTitle": "Rows",
@@ -2176,7 +2176,7 @@
     }
   },
   "settingsHomeGridClampHint": "Columns are reduced automatically when the window is too narrow, to keep cards readable.",
-  "settingsHomeGridNarrowHint": "This window is narrow, so home playlists use a horizontal carousel; the setting applies once the window is wider.",
+  "settingsHomeGridNarrowHint": "Choose Grid beside a home section heading to use these row and column settings",
   "settingsFontScaleTitle": "Font size",
   "settingsFontScaleSmall": "Small",
   "settingsFontScaleDefault": "Default",
@@ -2861,5 +2861,12 @@
       }
     }
   },
-  "deviceCacheClearFailed": "Cache cleanup could not finish. Check folder access and storage space. Records for files that were not deleted are preserved."
+  "deviceCacheClearFailed": "Cache cleanup could not finish. Check folder access and storage space. Records for files that were not deleted are preserved.",
+  "homePlaylistLayout": "Home playlist layout",
+  "homeLayoutAdaptive": "Automatic layout",
+  "homeLayoutCarousel": "Horizontal carousel",
+  "homeLayoutGrid": "Grid",
+  "homeLayoutList": "Vertical list",
+  "settingsHomeShowRadios": "Show radio section",
+  "settingsHomeShowRadiosDesc": "Show My Radios on the home page. This choice stays on this device."
 }

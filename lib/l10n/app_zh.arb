@@ -2256,7 +2256,7 @@
   "settingsMiniPlayerControlsPrevNext": "上一首 / 下一首",
   "settingsMiniPlayerControlsPrevNextMode": "上一首 / 下一首 + 播放模式",
   "settingsHomeGridTitle": "首页歌单网格",
-  "settingsHomeGridDesc": "宽屏首页「我的歌单 / 我的电台」每行显示几个、显示几行",
+  "settingsHomeGridDesc": "首页「我的歌单 / 我的电台」宫格每行显示几个、显示几行",
   "settingsHomeGridColumnsTitle": "每行数量",
   "settingsHomeGridColumnsAuto": "自动",
   "settingsHomeGridRowsTitle": "显示行数",
@@ -2282,7 +2282,7 @@
     }
   },
   "settingsHomeGridClampHint": "窗口宽度不足时会自动减少每行数量，避免卡片过窄",
-  "settingsHomeGridNarrowHint": "当前窗口较窄，首页歌单为横向滑动列表，此设置在窗口变宽后生效",
+  "settingsHomeGridNarrowHint": "可在首页区域标题旁切换为宫格；行列设置仅对宫格生效",
   "settingsFontScaleTitle": "字体大小",
   "settingsFontScaleSmall": "小",
   "settingsFontScaleDefault": "默认",
@@ -2967,5 +2967,12 @@
       }
     }
   },
-  "deviceCacheClearFailed": "清理缓存未完成，请检查目录权限和存储空间。未删除文件的缓存记录会保留。"
+  "deviceCacheClearFailed": "清理缓存未完成，请检查目录权限和存储空间。未删除文件的缓存记录会保留。",
+  "homePlaylistLayout": "首页歌单布局",
+  "homeLayoutAdaptive": "自动布局",
+  "homeLayoutCarousel": "横向滑动",
+  "homeLayoutGrid": "宫格",
+  "homeLayoutList": "纵向列表",
+  "settingsHomeShowRadios": "显示电台区块",
+  "settingsHomeShowRadiosDesc": "在首页显示「我的电台」，选择保存在本机。"
 }

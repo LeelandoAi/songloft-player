@@ -6396,7 +6396,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsHomeGridDesc.
   ///
   /// In zh, this message translates to:
-  /// **'宽屏首页「我的歌单 / 我的电台」每行显示几个、显示几行'**
+  /// **'首页「我的歌单 / 我的电台」宫格每行显示几个、显示几行'**
   String get settingsHomeGridDesc;
 
   /// No description provided for @settingsHomeGridColumnsTitle.
@@ -6450,7 +6450,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsHomeGridNarrowHint.
   ///
   /// In zh, this message translates to:
-  /// **'当前窗口较窄，首页歌单为横向滑动列表，此设置在窗口变宽后生效'**
+  /// **'可在首页区域标题旁切换为宫格；行列设置仅对宫格生效'**
   String get settingsHomeGridNarrowHint;
 
   /// No description provided for @settingsFontScaleTitle.
@@ -8483,6 +8483,48 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'清理缓存未完成，请检查目录权限和存储空间。未删除文件的缓存记录会保留。'**
   String get deviceCacheClearFailed;
+
+  /// No description provided for @homePlaylistLayout.
+  ///
+  /// In zh, this message translates to:
+  /// **'首页歌单布局'**
+  String get homePlaylistLayout;
+
+  /// No description provided for @homeLayoutAdaptive.
+  ///
+  /// In zh, this message translates to:
+  /// **'自动布局'**
+  String get homeLayoutAdaptive;
+
+  /// No description provided for @homeLayoutCarousel.
+  ///
+  /// In zh, this message translates to:
+  /// **'横向滑动'**
+  String get homeLayoutCarousel;
+
+  /// No description provided for @homeLayoutGrid.
+  ///
+  /// In zh, this message translates to:
+  /// **'宫格'**
+  String get homeLayoutGrid;
+
+  /// No description provided for @homeLayoutList.
+  ///
+  /// In zh, this message translates to:
+  /// **'纵向列表'**
+  String get homeLayoutList;
+
+  /// No description provided for @settingsHomeShowRadios.
+  ///
+  /// In zh, this message translates to:
+  /// **'显示电台区块'**
+  String get settingsHomeShowRadios;
+
+  /// No description provided for @settingsHomeShowRadiosDesc.
+  ///
+  /// In zh, this message translates to:
+  /// **'在首页显示「我的电台」，选择保存在本机。'**
+  String get settingsHomeShowRadiosDesc;
 }
 
 class _AppLocalizationsDelegate

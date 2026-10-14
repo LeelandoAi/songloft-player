@@ -3685,7 +3685,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsHomeGridDesc =>
-      'Columns and rows for the \"My playlists\" / \"My radios\" sections on the wide-screen home page';
+      'Columns and rows for the home playlist and radio grids';
 
   @override
   String get settingsHomeGridColumnsTitle => 'Per row';
@@ -3720,7 +3720,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsHomeGridNarrowHint =>
-      'This window is narrow, so home playlists use a horizontal carousel; the setting applies once the window is wider.';
+      'Choose Grid beside a home section heading to use these row and column settings';
 
   @override
   String get settingsFontScaleTitle => 'Font size';
@@ -4901,4 +4901,26 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get deviceCacheClearFailed =>
       'Cache cleanup could not finish. Check folder access and storage space. Records for files that were not deleted are preserved.';
+
+  @override
+  String get homePlaylistLayout => 'Home playlist layout';
+
+  @override
+  String get homeLayoutAdaptive => 'Automatic layout';
+
+  @override
+  String get homeLayoutCarousel => 'Horizontal carousel';
+
+  @override
+  String get homeLayoutGrid => 'Grid';
+
+  @override
+  String get homeLayoutList => 'Vertical list';
+
+  @override
+  String get settingsHomeShowRadios => 'Show radio section';
+
+  @override
+  String get settingsHomeShowRadiosDesc =>
+      'Show My Radios on the home page. This choice stays on this device.';
 }

@@ -2176,7 +2176,7 @@
   "settingsMiniPlayerControlsPrevNext": "Anterior / siguiente",
   "settingsMiniPlayerControlsPrevNextMode": "Anterior / siguiente + modo de reproducción",
   "settingsHomeGridTitle": "Cuadrícula de inicio de listas",
-  "settingsHomeGridDesc": "Columnas y filas de las secciones \"Mis listas\" / \"Mis radios\" en la página de inicio de pantalla ancha",
+  "settingsHomeGridDesc": "Columnas y filas de las cuadrículas de listas y radios en inicio",
   "settingsHomeGridColumnsTitle": "Por fila",
   "settingsHomeGridColumnsAuto": "Automático",
   "settingsHomeGridRowsTitle": "Filas",
@@ -2212,7 +2212,7 @@
     }
   },
   "settingsHomeGridClampHint": "Las columnas se reducen automáticamente cuando la ventana es demasiado estrecha para mantener legibles las tarjetas.",
-  "settingsHomeGridNarrowHint": "Esta ventana es estrecha, por lo que las listas del inicio usan un carrusel horizontal; el ajuste se aplica cuando la ventana sea más ancha.",
+  "settingsHomeGridNarrowHint": "Elige Cuadrícula junto al título de una sección para usar estos ajustes",
   "settingsFontScaleTitle": "Tamaño de fuente",
   "settingsFontScaleSmall": "Pequeña",
   "settingsFontScaleDefault": "Predeterminada",
@@ -2941,5 +2941,12 @@
       }
     }
   },
-  "deviceCacheClearFailed": "No se pudo completar la limpieza de caché. Comprueba el acceso a la carpeta y el espacio disponible. Se conservan los registros de archivos no eliminados."
+  "deviceCacheClearFailed": "No se pudo completar la limpieza de caché. Comprueba el acceso a la carpeta y el espacio disponible. Se conservan los registros de archivos no eliminados.",
+  "homePlaylistLayout": "Diseño de listas en inicio",
+  "homeLayoutAdaptive": "Diseño automático",
+  "homeLayoutCarousel": "Carrusel horizontal",
+  "homeLayoutGrid": "Cuadrícula",
+  "homeLayoutList": "Lista vertical",
+  "settingsHomeShowRadios": "Mostrar sección de radios",
+  "settingsHomeShowRadiosDesc": "Mostrar Mis radios en inicio. Esta opción se guarda en este dispositivo."
 }

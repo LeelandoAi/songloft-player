@@ -52,6 +52,14 @@ class HomeGridSelector extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          title: Text(l10n.settingsHomeShowRadios),
+          subtitle: Text(l10n.settingsHomeShowRadiosDesc),
+          value: ref.watch(homeRadioVisibilityProvider),
+          onChanged: ref.read(homeRadioVisibilityProvider.notifier).setVisible,
+        ),
+        const SizedBox(height: AppSpacing.md),
         Text(
           l10n.settingsHomeGridDesc,
           style: textTheme.bodySmall?.copyWith(

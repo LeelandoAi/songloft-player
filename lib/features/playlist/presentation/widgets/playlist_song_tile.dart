@@ -9,6 +9,7 @@ import '../../../../shared/widgets/song_tile.dart';
 class PlaylistSongTile extends StatelessWidget {
   final Song song;
   final int index;
+  final String? titleInitial;
   final VoidCallback onTap;
   final VoidCallback onRemove;
   final VoidCallback? onDeleteFromLibrary;
@@ -34,6 +35,7 @@ class PlaylistSongTile extends StatelessWidget {
     super.key,
     required this.song,
     required this.index,
+    this.titleInitial,
     required this.onTap,
     required this.onRemove,
     this.onDeleteFromLibrary,
@@ -78,6 +80,7 @@ class PlaylistSongTile extends StatelessWidget {
     return SongTile(
       song: song,
       index: index,
+      indexLabel: titleInitial,
       showIndex: !showDragHandle && !showCheckbox,
       showDragHandle: showDragHandle,
       dragIndex: index - 1,

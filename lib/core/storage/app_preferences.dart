@@ -18,6 +18,8 @@ class AppPreferences {
   static const _volumeKey = 'player_volume';
   static const _playModeKey = 'player_play_mode';
   static const _playlistViewModeKey = 'playlist_view_mode';
+  static const _homeShowRadiosKey = 'home_show_radios';
+  static const _homePlaylistLayoutKey = 'home_playlist_layout';
   static const _lastUsernameKey = 'last_username';
   static const _lastPasswordKey = 'last_password';
   static const _currentIndexKey = 'player_current_index';
@@ -217,6 +219,16 @@ class AppPreferences {
   Future<bool> setPlaylistViewMode(String mode) {
     return _prefs.setString(_playlistViewModeKey, mode);
   }
+
+  bool getHomeShowRadios() => _prefs.getBool(_homeShowRadiosKey) ?? true;
+
+  Future<bool> setHomeShowRadios(bool visible) =>
+      _prefs.setBool(_homeShowRadiosKey, visible);
+
+  String? getHomePlaylistLayout() => _prefs.getString(_homePlaylistLayoutKey);
+
+  Future<bool> setHomePlaylistLayout(String layout) =>
+      _prefs.setString(_homePlaylistLayoutKey, layout);
 
   /// 被忽略的补丁版本（热更新「忽略此版本」）；无则 null
   String? getIgnoredPatchVersion() => _prefs.getString(_ignoredPatchVersionKey);
@@ -653,7 +665,7 @@ class AppPreferences {
   static const _homeGridColumnsKey = 'home_grid_columns';
   static const _homeGridRowsKey = 'home_grid_rows';
 
-  /// 首页宽屏歌单网格每行列数；0 = 自动（跟随响应式断点）。
+  /// 首页歌单网格每行列数；0 = 自动（跟随响应式断点）。
   ///
   /// 返回 null 表示从未设置，默认值由 `HomeGridConfig.fromStorage` 决定 ——
   /// 这样默认值只有一处定义，core 层也不用反向依赖 features。
@@ -666,7 +678,7 @@ class AppPreferences {
     return _prefs.setInt(_homeGridColumnsKey, value);
   }
 
-  /// 首页宽屏歌单网格显示行数；0 = 全部（不截断）。返回 null 表示从未设置。
+  /// 首页歌单网格显示行数；0 = 全部（不截断）。返回 null 表示从未设置。
   int? getHomeGridRows() {
     return _prefs.getInt(_homeGridRowsKey);
   }

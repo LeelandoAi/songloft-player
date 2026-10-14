@@ -3738,7 +3738,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get settingsHomeGridDesc =>
-      'Columnas y filas de las secciones \"Mis listas\" / \"Mis radios\" en la página de inicio de pantalla ancha';
+      'Columnas y filas de las cuadrículas de listas y radios en inicio';
 
   @override
   String get settingsHomeGridColumnsTitle => 'Por fila';
@@ -3773,7 +3773,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get settingsHomeGridNarrowHint =>
-      'Esta ventana es estrecha, por lo que las listas del inicio usan un carrusel horizontal; el ajuste se aplica cuando la ventana sea más ancha.';
+      'Elige Cuadrícula junto al título de una sección para usar estos ajustes';
 
   @override
   String get settingsFontScaleTitle => 'Tamaño de fuente';
@@ -4986,4 +4986,26 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get deviceCacheClearFailed =>
       'No se pudo completar la limpieza de caché. Comprueba el acceso a la carpeta y el espacio disponible. Se conservan los registros de archivos no eliminados.';
+
+  @override
+  String get homePlaylistLayout => 'Diseño de listas en inicio';
+
+  @override
+  String get homeLayoutAdaptive => 'Diseño automático';
+
+  @override
+  String get homeLayoutCarousel => 'Carrusel horizontal';
+
+  @override
+  String get homeLayoutGrid => 'Cuadrícula';
+
+  @override
+  String get homeLayoutList => 'Lista vertical';
+
+  @override
+  String get settingsHomeShowRadios => 'Mostrar sección de radios';
+
+  @override
+  String get settingsHomeShowRadiosDesc =>
+      'Mostrar Mis radios en inicio. Esta opción se guarda en este dispositivo.';
 }

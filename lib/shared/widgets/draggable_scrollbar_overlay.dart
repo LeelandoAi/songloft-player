@@ -16,6 +16,7 @@ class DraggableScrollbarOverlay extends StatefulWidget {
     this.headerExtent = 0.0,
     this.enabled = true,
     this.labelBuilder,
+    this.useScrollPositionForLabel = false,
     this.onDragToUnloaded,
   });
 
@@ -26,6 +27,9 @@ class DraggableScrollbarOverlay extends StatefulWidget {
   final double headerExtent;
   final bool enabled;
   final String Function(int index, int total)? labelBuilder;
+
+  /// 提示已滚到的实际位置，避免尚未加载的目标位置被误当成当前歌曲。
+  final bool useScrollPositionForLabel;
   final Future<void> Function()? onDragToUnloaded;
 
   @override
@@ -275,7 +279,9 @@ class _DraggableScrollbarOverlayState extends State<DraggableScrollbarOverlay> {
         (scrollableTrack * fraction).clamp(0.0, scrollableTrack);
 
     final displayIndex =
-        _isDragging ? _indexFromFraction(_dragThumbFraction) : _currentIndex();
+        _isDragging && !widget.useScrollPositionForLabel
+            ? _indexFromFraction(_dragThumbFraction)
+            : _currentIndex();
 
     return Listener(
       behavior: HitTestBehavior.translucent,

@@ -1,13 +1,29 @@
-/// 首页宽屏歌单网格的行列配置（songloft-org/songloft#332）。
+/// 首页歌单布局。adaptive 沿用窄屏轮播、宽屏网格；显式选择保存在设备本地。
+enum HomePlaylistLayout {
+  adaptive,
+  carousel,
+  grid,
+  list;
+
+  static HomePlaylistLayout fromStorage(String? value) => values.firstWhere(
+    (layout) => layout.name == value,
+    orElse: () => adaptive,
+  );
+
+  HomePlaylistLayout resolve(bool wide) =>
+      this == adaptive ? (wide ? grid : carousel) : this;
+}
+
+/// 首页歌单网格的行列配置（songloft-org/songloft#332）。
 ///
-/// 仅作用于首页宽屏（`context.useWideLayout`）的「我的歌单 / 我的电台」两个网格；
-/// 窄屏走 `PlaylistCarousel` 横向轮播，没有行列概念。曲库的
+/// 作用于首页「我的歌单 / 我的电台」两个网格，包括窄屏手动选择的网格。
+/// 轮播与纵向列表没有行列概念。曲库的
 /// `browse_collection_view` 不受此配置影响。
 ///
 /// 纯本地偏好，刻意不参与服务器偏好同步：网格规格与屏幕尺寸强相关，同一账号的
 /// 手机与桌面不该共享同一份配置。
 class HomeGridConfig {
-  /// 每行列数；[autoColumns] 表示沿用响应式断点（平板 3 / 桌面 4）。
+  /// 每行列数；[autoColumns] 表示沿用响应式断点（手机 2 / 平板 3 / 桌面 4）。
   final int columns;
 
   /// 显示行数；[allRows] 表示不截断。
@@ -25,8 +41,7 @@ class HomeGridConfig {
   static const int defaultRows = 2;
 
   /// 设置页可选列数（数组顺序即 UI 顺序）。
-  /// 没有 2：`autoColumns` 在 mobile 断点解析为 2，但 mobile 走轮播取不到网格。
-  static const List<int> columnOptions = <int>[autoColumns, 3, 4, 5, 6];
+  static const List<int> columnOptions = <int>[autoColumns, 2, 3, 4, 5, 6];
 
   /// 设置页可选行数（数组顺序即 UI 顺序）。
   static const List<int> rowOptions = <int>[1, 2, 3, 4, allRows];

@@ -32,7 +32,8 @@ class PlaylistCarousel extends StatelessWidget {
       tablet: 160,
       desktop: 180,
     );
-    final cardHeight = cardWidth + 48; // 封面高度 + 标题区域
+    final scaler = MediaQuery.textScalerOf(context);
+    final cardHeight = cardWidth + 8 + scaler.scale(40) + scaler.scale(20);
 
     return SizedBox(
       height: cardHeight,
@@ -82,7 +83,7 @@ class _PlaylistCarouselItem extends StatelessWidget {
 
     return Semantics(
       button: true,
-      label: AppLocalizations.of(context).homeOpenPlaylist,
+      label: AppLocalizations.of(context).homeOpenPlaylistNamed(playlist.name),
       child: GestureDetector(
         onTap: onTap,
         child: SizedBox(
@@ -149,6 +150,16 @@ class _PlaylistCarouselItem extends StatelessWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
+              ),
+              Text(
+                AppLocalizations.of(
+                  context,
+                ).homeSongCountShort(playlist.songCount),
+                style: textTheme.bodySmall?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),

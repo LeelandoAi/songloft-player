@@ -14,6 +14,8 @@ import 'package:songloft_flutter/features/playlist/presentation/providers/playli
 import 'package:songloft_flutter/features/settings/presentation/providers/settings_provider.dart';
 import 'package:songloft_flutter/l10n/app_localizations.dart';
 import 'package:songloft_flutter/shared/models/library_stats.dart';
+import 'package:songloft_flutter/shared/widgets/browse_card.dart';
+import 'package:songloft_flutter/features/home/presentation/widgets/playlist_carousel.dart';
 
 /// 首页宽屏歌单网格的行列配置（songloft-org/songloft#332）。
 ///
@@ -99,6 +101,60 @@ void main() {
   /// GridView.builder 把 itemCount 塞进 semanticChildCount，比数 InkWell 稳。
   int? firstItemCount(WidgetTester tester) =>
       tester.widget<GridView>(find.byType(GridView).first).semanticChildCount;
+
+  testWidgets('手机布局菜单切换宫格与纵向列表，数量显示并保存本机偏好', (tester) async {
+    useWideViewport(tester, width: 390);
+    await pumpHome(tester, normalCount: 8, radioCount: 0);
+    expect(find.byType(PlaylistCarousel), findsOneWidget);
+    expect(find.text('1 首'), findsOneWidget);
+    await tester.tap(find.byTooltip('首页歌单布局').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('宫格'));
+    await tester.pumpAndSettle();
+    expect(firstDelegate(tester).crossAxisCount, 2);
+    expect(firstItemCount(tester), 4);
+    expect(find.byType(PlaylistCarousel), findsNothing);
+    await tester.tap(find.byTooltip('首页歌单布局').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('纵向列表'));
+    await tester.pumpAndSettle();
+    expect(find.byType(GridView), findsNothing);
+    expect(find.byType(BrowseCard), findsNWidgets(8));
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getString('home_playlist_layout'), 'list');
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('手机纵向列表恢复本机选择并续拉超过一页的歌单', (tester) async {
+    SharedPreferences.setMockInitialValues({'home_playlist_layout': 'list'});
+    useWideViewport(tester, width: 390);
+    final normal = _PagedNotifier('normal', total: 65);
+    await pumpHome(tester, normalNotifier: () => normal, radioCount: 0);
+    for (var i = 0; i < 5; i++) {
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+    expect(normal.items.length, 65);
+    expect(normal.loadMoreCalls, 2);
+    expect(find.byType(BrowseCard), findsNWidgets(65));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('隐藏电台后忽略电台错误，仍显示歌单并可恢复', (tester) async {
+    SharedPreferences.setMockInitialValues({'home_show_radios': false});
+    useWideViewport(tester);
+    await pumpHome(tester, normalCount: 3, radioCount: null);
+    expect(find.text('我的歌单'), findsOneWidget);
+    expect(find.text('我的电台'), findsNothing);
+    final context = tester.element(find.byType(HomePage));
+    final container = ProviderScope.containerOf(context);
+    await container.read(homeRadioVisibilityProvider.notifier).setVisible(true);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(find.text('我的电台'), findsOneWidget);
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getBool('home_show_radios'), isTrue);
+    expect(tester.takeException(), isNull);
+  });
 
   testWidgets('默认配置渲染 4 列 × 2 行 = 8 张卡（与改造前一致）', (tester) async {
     useWideViewport(tester);

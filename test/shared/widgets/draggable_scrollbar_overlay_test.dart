@@ -24,6 +24,47 @@ class _ProbeState extends State<_Probe> {
 }
 
 void main() {
+  testWidgets('未加载的目标位置不能被当作当前歌曲的提示位置', (tester) async {
+    final ctl = ScrollController();
+    addTearDown(ctl.dispose);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SizedBox(
+            width: 400,
+            height: 600,
+            child: DraggableScrollbarOverlay(
+              scrollController: ctl,
+              totalItemCount: 200,
+              estimatedItemHeight: 50,
+              useScrollPositionForLabel: true,
+              labelBuilder: (index, total) => '$index / $total',
+              child: ListView.builder(
+                controller: ctl,
+                itemCount: 40,
+                itemExtent: 50,
+                itemBuilder: (_, index) => Text('row $index'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    ctl.jumpTo(10);
+    await tester.pump();
+    final corner = tester.getTopRight(find.byType(DraggableScrollbarOverlay));
+    final gesture = await tester.startGesture(
+      Offset(corner.dx - 16, corner.dy + 20),
+    );
+    await gesture.moveBy(const Offset(0, 300));
+    await tester.pump();
+    final actual = (ctl.offset / 50).floor() + 1;
+    expect(find.text('$actual / 200'), findsOneWidget);
+    expect(actual, lessThan(40));
+    await gesture.up();
+    await tester.pumpAndSettle();
+  });
+
   testWidgets('多个 scroll position 过渡态不会抛出异常', (tester) async {
     final controller = ScrollController();
     addTearDown(controller.dispose);
