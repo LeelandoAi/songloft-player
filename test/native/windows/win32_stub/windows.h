@@ -10,8 +10,15 @@ using DWORD = std::uint32_t;
 using LONG = std::int32_t;
 using LPARAM = std::intptr_t;
 using UINT = unsigned int;
+using WPARAM = std::uintptr_t;
+using LRESULT = std::intptr_t;
+using UINT_PTR = std::uintptr_t;
+using DWORD_PTR = std::uintptr_t;
 #define CALLBACK
 constexpr BOOL TRUE = 1;
+constexpr BOOL FALSE = 0;
+constexpr UINT WM_WINDOWPOSCHANGED = 0x0047;
+constexpr UINT WM_NCDESTROY = 0x0082;
 constexpr UINT GW_OWNER = 4;
 constexpr UINT SWP_NOSIZE = 0x0001;
 constexpr UINT SWP_NOZORDER = 0x0004;

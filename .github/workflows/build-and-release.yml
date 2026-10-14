@@ -213,10 +213,20 @@ jobs:
           echo "build_time=$buildTime" >> $env:GITHUB_OUTPUT
       - name: Setup NuGet
         uses: nuget/setup-nuget@v2
+      - name: Test Windows WebView window synchronization
+        shell: pwsh
+        run: |
+          cmake -S test/native/windows -B build/native-webview-tests
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          cmake --build build/native-webview-tests --config Release
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          ctest --test-dir build/native-webview-tests -C Release --output-on-failure
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - run: flutter build windows --release --dart-define=FRONTEND_VERSION=${{ steps.version.outputs.version }} --dart-define=FRONTEND_BUILD_TIME=${{ steps.version.outputs.build_time }} --dart-define=TRACELY_APP_ID=${{ secrets.TRACELY_APP_ID }} --dart-define=TRACELY_APP_SECRET=${{ secrets.TRACELY_APP_SECRET }} --dart-define=TRACELY_HOST=${{ secrets.TRACELY_HOST }}
       - name: Package ZIP (绿色便携包)
         shell: pwsh
         run: |
+          Copy-Item build\native-webview-tests\Release\webview_hit_test.exe -Destination build\windows\x64\runner\Release\ -ErrorAction Stop
           Compress-Archive -Path build\windows\x64\runner\Release\* -DestinationPath songloft-windows-x64.zip
       - name: Build MSIX package
         continue-on-error: true

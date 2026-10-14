@@ -99,6 +99,20 @@ flutter pub run msix:create
 
 Windows 平台的 SharedPreferences 读取偶尔不稳定，`AuthInterceptor` 优先使用内存缓存的 `cachedAccessToken`，仅在缓存为空时才读存储。
 
+### Windows 插件与桌面右键验收
+
+针对 [songloft-org/songloft#499](https://github.com/songloft-org/songloft/issues/499)，客户端使用 [WebView2 本地补丁](../../third_party/flutter_inappwebview_windows/README.md)，在辅助 HWND 移动后通知 WebView2 控制器。标准版和 Bundle 版 Windows CI 均先运行 `test/native/windows` 再构建。坐标模拟、真实 HWND 消息检查和编译通过分别记录，不能当作桌面右键已恢复的证据。
+
+测试包验收步骤（记录包版本、构建时间、两屏缩放比例及 WebView2 Runtime 版本）：
+
+1. 完全退出旧客户端，解压并运行新 ZIP 中的客户端；Windows 原生补丁需要整包替换。
+2. 在主屏打开 MIoT 歌曲全屏，拖到副屏；在主屏原插件区域测试桌面左键、右键菜单。
+3. 再拖回主屏，复测副屏原区域；有负坐标或不同 DPI 的屏幕时也覆盖。
+4. 检查插件点击、输入、菜单及播放状态；移动期间插件不应因本补丁重载。
+5. 最小化、隐藏到托盘和恢复后重复检查桌面右键及插件显示；原有恢复时重载行为不因本补丁改变。
+
+如果仍有区域被拦截，运行 ZIP 中的 `webview_hit_test.exe`，把鼠标停在故障区域等待 20 秒，将生成的 `songloft-webview-hit-test-*.txt` 附到 Issue。该工具只读取光标下窗口的 HWND、类名、进程 ID、矩形和 owner，不发送点击，不读取窗口标题、URL 或进程命令行。日志可辨别残留的是辅助窗口、WebView2 内部窗口还是其他程序，避免下一轮仅凭症状修改。
+
 ---
 
 ## Linux

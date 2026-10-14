@@ -10,4 +10,12 @@
 
 ## 条目
 
-当前未迁入经过独立取证的历史事件。首次复盘核对提交、Issue 与验证后新增；现有回归规则继续执行。
+### WIN-001：辅助窗口坐标测试不等于 WebView2 桌面输入验收
+
+- 范围：Windows 插件 WebView2、跨屏移动与残留区域鼠标输入。
+- 规则：分别核对修复提交、发布版本和实际输入；模拟 Win32 坐标测试及 Windows 编译不能证明旧区域恢复桌面右键。覆盖全屏插件、跨屏往返、不同 DPI、最小化和托盘恢复，记录真实窗口及输入证据。
+- 失败：songloft-org/songloft#499 的位置同步补丁 [f1ef7f2](https://github.com/songloft-org/songloft-player/commit/f1ef7f2d8aabf4ba9e9da12cac029f52e211e189) 于 2026-10-06 合入，仅验证模拟窗口及编译，明确未做双屏实测。2026-10-14，报告人[反馈客户端 2.13.1 仍屏蔽右键](https://github.com/songloft-org/songloft/issues/499#issuecomment-6160069251)。标准版 v2.13.1 与父仓库同版 gitlink 都指向 f684da386c75bb8825713b1b14fdd2a3c24d7adb，包含该补丁；不能归为发布遗漏。
+- 调查：基线 1cb9b4947cdc1c641507e9486b0a0024fc274e97 下，Linux/GCC 12.2 的原有 7 个模拟场景通过。测试没有 WebView2 控制器或真实鼠标命中。基线 runner 及锁定的 flutter_inappwebview_windows 0.6.0 未调用 `NotifyParentWindowPositionChanged`，属于已确认的接口缺口，但不能据此认定复发根因。
+- 候选修复：本次候选补丁将 Windows 平台包 vendoring 到 `third_party/flutter_inappwebview_windows`，辅助 HWND 的 `WM_WINDOWPOSCHANGED` 默认处理后通知控制器；退出与窗口销毁均解绑，防重入与 HWND 复用。Windows 打包 CI 增加真实 HWND/comctl32 检查，ZIP 包含只读 `webview_hit_test.exe`，若仍复发可取证实际命中窗口。范围与验收见[补丁说明](third_party/flutter_inappwebview_windows/README.md)及[平台说明](docs/cn/platform-notes.md#windows-插件与桌面右键验收)。
+- Done right：Linux/GCC 12.2 `cmake` 与 `ctest` 通过（7 个原有坐标场景 + 8 个 observer 场景，目录 `/tmp/songloft-499-native-20261014-02`）；隔离副本删掉关键通知或显式解绑后均编译成功且目标测试失败，日志分别在 `/tmp/songloft-499-no-notify-final-20261014/validation.log`、`/tmp/songloft-499-no-detach-final-20261014/validation.log`。这属于破坏检查，不是旧包的 Windows 复现。Flutter 3.41.5 下 13 个插件相关测试、`flutter analyze`、格式和 diff 检查通过。Not run：Windows 完整编译、真实 HWND 检查、诊断工具运行及双屏/WebView2 输入验收；开发机为 Linux，用户也无 Windows 环境，待 CI 构建与报告人测试。
+- Seen 1× (2026-10-14)。状态：经验，#499 未完成实机验收。

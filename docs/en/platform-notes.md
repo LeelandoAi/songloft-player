@@ -99,6 +99,20 @@ flutter pub run msix:create
 
 SharedPreferences reads on Windows can occasionally be unstable. `AuthInterceptor` prefers the in-memory `cachedAccessToken` and only reads from storage when the cache is empty.
 
+### Windows plugin and desktop context menu acceptance
+
+For [songloft-org/songloft#499](https://github.com/songloft-org/songloft/issues/499), the client uses a [local WebView2 patch](../../third_party/flutter_inappwebview_windows/README.en.md) to notify the controller after its auxiliary HWND moves. Standard and Bundle Windows CI run `test/native/windows` before building. Record simulated coordinates, real HWND message checks, and compilation separately; none proves desktop context menus have recovered.
+
+Test package acceptance steps (record package version, build time, both monitors' scaling, and WebView2 Runtime version):
+
+1. Fully quit the old client, extract the new ZIP, and run its client. This native Windows patch requires replacing the complete package.
+2. Open the MIoT fullscreen song view on the primary monitor and drag the window to the secondary monitor. Test desktop left-clicks and context menus in the old plugin region.
+3. Drag back and retest the abandoned secondary-monitor region. Cover negative screen coordinates and different DPI settings when available.
+4. Check plugin clicks, text entry, menus, and playback state. Moving the window should not reload the plugin because of this patch.
+5. Repeat desktop context menu and plugin display checks after minimization, hiding to the tray, and restoration. Existing reload-on-restore behavior is unchanged by this patch.
+
+If input is still blocked, run `webview_hit_test.exe` from the ZIP, hold the mouse in the affected region for 20 seconds, and attach the resulting `songloft-webview-hit-test-*.txt` to the Issue. This tool only reads the HWND, class name, process ID, rectangle, and owner of windows under the cursor. It sends no clicks and reads no window titles, URLs, or process command lines. The log distinguishes an auxiliary HWND, an internal WebView2 window, and another application's window so subsequent fixes have direct evidence.
+
 ---
 
 ## Linux
