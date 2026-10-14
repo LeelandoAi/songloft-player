@@ -18,6 +18,7 @@ import '../queue_page.dart';
 import '../providers/audio_track_provider.dart';
 import 'audio_track_control.dart';
 import 'lyrics_view.dart';
+import 'lyrics_screen_awake.dart';
 import 'play_controls.dart';
 import 'popup_controls.dart';
 import '../../../dlna/presentation/widgets/cast_button.dart';
@@ -292,11 +293,14 @@ class _MobilePlayerState extends ConsumerState<MobilePlayer>
                               ),
                             ),
                             // 页面2：歌词
-                            LyricsView(
-                              currentPosition: state.currentTime,
-                              onSeek: notifier.seek,
-                              song: song,
-                              editable: true,
+                            LyricsScreenAwake(
+                              visible: _currentPage == 1,
+                              child: LyricsView(
+                                currentPosition: state.currentTime,
+                                onSeek: notifier.seek,
+                                song: song,
+                                editable: true,
+                              ),
                             ),
                           ],
                         ),

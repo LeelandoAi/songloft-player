@@ -522,6 +522,15 @@ class AppPreferences {
   static const _notificationLyricInTitleKey =
       'player_notification_lyric_in_title';
 
+  /// Only the visible lyrics page keeps the screen awake. Device-local, off by default.
+  bool getLyricsKeepScreenOn() {
+    return _prefs.getBool('player_lyrics_keep_screen_on') ?? false;
+  }
+
+  Future<bool> setLyricsKeepScreenOn(bool value) {
+    return _prefs.setBool('player_lyrics_keep_screen_on', value);
+  }
+
   /// 系统媒体通知（通知栏/锁屏/桌面媒体控件）里歌词的显示位置（默认开启）。
   /// 开启：标题行显示当前歌词、歌名归副标题；关闭：标题行显示歌名、副标题显示纯歌词。
   /// 纯本地设置，不参与服务器偏好同步。

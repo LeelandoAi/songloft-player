@@ -30,6 +30,7 @@ import '../../../playlist/presentation/providers/playlist_provider.dart';
 import '../../../jsplugin/presentation/widgets/jsplugin_manager.dart';
 import '../../../../core/backend/run_mode_provider.dart';
 import '../../data/log_export_service.dart';
+import '../providers/lyrics_keep_screen_on_provider.dart';
 import '../../data/upgrade_api.dart';
 import 'cache_manager.dart';
 import 'home_grid_selector.dart';
@@ -349,6 +350,7 @@ class _SettingsCategoryContentState
           l10n.settingsMiniPlayerControlsPrevNextMode,
     };
     final autoEnterLyrics = ref.watch(autoEnterLyricsOnLaunchProvider);
+    final lyricsKeepScreenOn = ref.watch(lyricsKeepScreenOnProvider);
     final lyricInTitle = ref.watch(notificationLyricInTitleProvider);
     final desktopLyricEnabled = ref.watch(desktopLyricEnabledProvider);
     final desktopLyricLocked = ref.watch(desktopLyricLockedProvider);
@@ -504,6 +506,16 @@ class _SettingsCategoryContentState
             value: autoEnterLyrics,
             onChanged: (v) {
               ref.read(autoEnterLyricsOnLaunchProvider.notifier).setEnabled(v);
+            },
+          ),
+          const Divider(height: 1),
+          SwitchListTile(
+            secondary: const Icon(Icons.wb_sunny_outlined),
+            title: Text(l10n.settingsLyricsKeepScreenOnTitle),
+            subtitle: Text(l10n.settingsLyricsKeepScreenOnDesc),
+            value: lyricsKeepScreenOn,
+            onChanged: (value) {
+              ref.read(lyricsKeepScreenOnProvider.notifier).setEnabled(value);
             },
           ),
           const Divider(height: 1),

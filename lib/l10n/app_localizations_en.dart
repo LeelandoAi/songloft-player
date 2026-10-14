@@ -3741,6 +3741,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsAutoEnterLyricsOnLaunchTitle => 'Open lyrics on launch';
 
   @override
+  String get settingsLyricsKeepScreenOnTitle => 'Keep screen on for lyrics';
+
+  @override
+  String get settingsLyricsKeepScreenOnDesc =>
+      'Keep the screen awake while viewing lyrics; restore automatic sleep when leaving lyrics or switching to the background';
+
+  @override
   String get settingsAutoEnterLyricsOnLaunchDesc =>
       'Automatically open the full-screen lyrics view when the app opens (adapts to screen size)';
 

@@ -54,6 +54,8 @@
   "githubDiscoveryInstalledUnknown": "Comprobando plugins instalados; pulsa para reintentar si falla la carga.",
   "githubDiscoveryOpenFailed": "No se pudo abrir el enlace.",
   "@@locale": "es",
+  "settingsLyricsKeepScreenOnTitle": "Mantener la pantalla encendida con las letras",
+  "settingsLyricsKeepScreenOnDesc": "Mantiene la pantalla encendida al ver las letras; restaura el apagado automático al salir o pasar a segundo plano",
   "updateFoundTitle": "Actualización disponible",
   "updateFoundBody": "Hay una nueva versión {version} disponible. ¿Descargar y actualizar ahora?",
   "@updateFoundBody": {

@@ -3578,6 +3578,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsAutoEnterLyricsOnLaunchTitle => '打开后自动进入歌词';
 
   @override
+  String get settingsLyricsKeepScreenOnTitle => '歌词页屏幕常亮';
+
+  @override
+  String get settingsLyricsKeepScreenOnDesc => '查看歌词时保持屏幕亮起，离开歌词页或切到后台后恢复自动熄屏';
+
+  @override
   String get settingsAutoEnterLyricsOnLaunchDesc => '启动客户端后自动进入全屏歌词界面（按屏幕自动适配）';
 
   @override

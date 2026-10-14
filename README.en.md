@@ -13,6 +13,8 @@
 
 Songloft Player is a cross-platform music player built with Flutter, supporting iOS, Android, macOS, Windows, Linux, and Web. Supports **Bundle local mode**: embeds the Go backend directly into the client, no server deployment required.
 
+Settings → Playback → Keep screen on for lyrics keeps the display awake while viewing lyrics. It is off by default and saved only on this device. Returning to the cover on mobile, leaving the player, or backgrounding the app restores automatic screen sleep. Wide players apply it while lyrics are visible, including when playback is paused. Web support depends on browser capabilities and permission; unavailable or denied requests do not interrupt playback.
+
 <p align="center">
   <a href="https://github.com/songloft-org/songloft-player">🏠 GitHub</a> •
   <a href="https://github.com/songloft-org/songloft-player/releases">📥 Download</a> •

@@ -6489,6 +6489,18 @@ abstract class AppLocalizations {
   /// **'打开后自动进入歌词'**
   String get settingsAutoEnterLyricsOnLaunchTitle;
 
+  /// No description provided for @settingsLyricsKeepScreenOnTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'歌词页屏幕常亮'**
+  String get settingsLyricsKeepScreenOnTitle;
+
+  /// No description provided for @settingsLyricsKeepScreenOnDesc.
+  ///
+  /// In zh, this message translates to:
+  /// **'查看歌词时保持屏幕亮起，离开歌词页或切到后台后恢复自动熄屏'**
+  String get settingsLyricsKeepScreenOnDesc;
+
   /// No description provided for @settingsAutoEnterLyricsOnLaunchDesc.
   ///
   /// In zh, this message translates to:

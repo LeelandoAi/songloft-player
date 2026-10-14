@@ -3794,6 +3794,14 @@ class AppLocalizationsEs extends AppLocalizations {
   String get settingsAutoEnterLyricsOnLaunchTitle => 'Abrir letras al iniciar';
 
   @override
+  String get settingsLyricsKeepScreenOnTitle =>
+      'Mantener la pantalla encendida con las letras';
+
+  @override
+  String get settingsLyricsKeepScreenOnDesc =>
+      'Mantiene la pantalla encendida al ver las letras; restaura el apagado automático al salir o pasar a segundo plano';
+
+  @override
   String get settingsAutoEnterLyricsOnLaunchDesc =>
       'Abre automáticamente la vista de letras a pantalla completa al abrir la app (se adapta al tamaño de pantalla)';
 

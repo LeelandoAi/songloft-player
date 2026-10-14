@@ -17,6 +17,7 @@ import '../../domain/player_state.dart';
 import '../providers/player_provider.dart';
 import '../queue_page.dart';
 import 'lyrics_view.dart';
+import 'lyrics_screen_awake.dart';
 import '../providers/audio_track_provider.dart';
 import 'audio_track_control.dart';
 import 'equalizer_panel.dart';
@@ -343,11 +344,14 @@ class _DesktopFullPlayerState extends ConsumerState<DesktopFullPlayer>
                         // 右侧：歌词
                         Expanded(
                           flex: 5,
-                          child: LyricsView(
-                            currentPosition: state.currentTime,
-                            onSeek: notifier.seek,
-                            song: song,
-                            editable: true,
+                          child: LyricsScreenAwake(
+                            visible: true,
+                            child: LyricsView(
+                              currentPosition: state.currentTime,
+                              onSeek: notifier.seek,
+                              song: song,
+                              editable: true,
+                            ),
                           ),
                         ),
                       ],

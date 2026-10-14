@@ -13,6 +13,8 @@
 
 Songloft 跨平台音乐播放器，基于 Flutter 构建，支持 iOS、Android、macOS、Windows、Linux、Web 六端。支持 **Bundle 本地模式**：内嵌 Go 后端，无需部署服务器即可播放本地音乐。
 
+「设置 → 播放设置 → 歌词页屏幕常亮」可在查看歌词时保持亮屏，默认关闭、仅保存到本机。手机返回封面、离开播放器或切到后台后恢复系统自动熄屏；宽屏播放器在歌词可见时生效，暂停播放仍可查看歌词。Web 端受浏览器亮屏能力和权限限制，不支持或拒绝时不影响播放。
+
 <p align="center">
   <a href="https://github.com/songloft-org/songloft-player">🏠 GitHub</a> •
   <a href="https://github.com/songloft-org/songloft-player/releases">📥 下载</a> •

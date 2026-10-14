@@ -2289,6 +2289,8 @@
   "settingsFontScaleLarge": "大",
   "settingsFontScaleExtraLarge": "特大",
   "settingsAutoEnterLyricsOnLaunchTitle": "打开后自动进入歌词",
+  "settingsLyricsKeepScreenOnTitle": "歌词页屏幕常亮",
+  "settingsLyricsKeepScreenOnDesc": "查看歌词时保持屏幕亮起，离开歌词页或切到后台后恢复自动熄屏",
   "settingsAutoEnterLyricsOnLaunchDesc": "启动客户端后自动进入全屏歌词界面（按屏幕自动适配）",
   "settingsNotificationLyricInTitleTitle": "通知栏歌词占用标题行",
   "settingsNotificationLyricInTitleDesc": "开启：标题行显示歌词、歌名归副标题；关闭：标题行显示歌名、副标题显示歌词",

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 
 import '../../../../core/audio/video_controller_provider.dart';
+import '../../../../core/platform/screen_awake.dart';
 import '../../../../shared/models/song.dart';
 import '../providers/player_provider.dart';
 import 'web_video_view.dart';
@@ -95,11 +96,18 @@ class _VideoStageState extends ConsumerState<VideoStage> {
         borderRadius: radius,
         child: ColoredBox(
           color: Colors.black,
-          child: Video(
-            controller: controller,
-            // 播放控制沿用应用自身的控制条，不叠加 media_kit 默认控件。
-            controls: NoVideoControls,
-            fit: BoxFit.contain,
+          child: ScreenAwakeScope(
+            enabled: ref.watch(
+              activePlaybackStateProvider.select((s) => s.isPlaying),
+            ),
+            child: Video(
+              controller: controller,
+              // One shared controller arbitrates lyrics and video ownership.
+              wakelock: false,
+              // 播放控制沿用应用自身的控制条，不叠加 media_kit 默认控件。
+              controls: NoVideoControls,
+              fit: BoxFit.contain,
+            ),
           ),
         ),
       ),

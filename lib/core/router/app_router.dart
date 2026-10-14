@@ -27,6 +27,7 @@ import '../../features/player/presentation/widgets/mobile_player.dart';
 import '../../features/player/presentation/widgets/desktop_full_player.dart';
 import '../../shared/layouts/shell_layout.dart';
 import '../theme/responsive.dart';
+import '../platform/screen_awake.dart';
 import '../../l10n/app_localizations.dart';
 
 /// 从插件页 URL 里取 `entryPath`：`.../api/v1/jsplugin/<entryPath>[/...]`。
@@ -83,6 +84,7 @@ final routerProvider = Provider<GoRouter>((ref) {
   });
 
   return GoRouter(
+    observers: [screenAwakeRouteObserver],
     navigatorKey: rootNavigatorKey,
     initialLocation: AppRoutes.home,
     debugLogDiagnostics: true,
