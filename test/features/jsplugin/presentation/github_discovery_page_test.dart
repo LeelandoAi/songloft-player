@@ -399,6 +399,27 @@ void main() {
     );
     expect(find.text('已安装'), findsWidgets);
   });
+  testWidgets('四段日期版本显示更新并提交同一仓库的安装请求', (tester) async {
+    final plugins = _Plugins(
+      installed: [
+        _installed(download: discoveryDownload, version: '2026.10.15'),
+      ],
+    );
+    await _pump(
+      tester,
+      _Discovery(discoveryPlugin(version: '2026.10.15.1')),
+      plugins,
+    );
+    await _detail(tester);
+    expect(find.textContaining('2026.10.15.1'), findsWidgets);
+    expect(find.textContaining('更新'), findsWidgets);
+    await _install(tester);
+    await tester.tap(find.byKey(const ValueKey('github-install-confirm')));
+    await _frames(tester);
+    expect(plugins.installs, hasLength(1));
+    expect(plugins.installs.single.url, contains('/v2026.10.15.1/'));
+    expect(plugins.installs.single.overwrite, isTrue);
+  });
   testWidgets('dev 服务端跳过最低版本检查，仍需确认后才安装', (tester) async {
     final plugins = _Plugins();
     await _pump(

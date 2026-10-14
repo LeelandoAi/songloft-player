@@ -46,7 +46,11 @@ Map<String, dynamic> discoveryRelease() => {
   ],
 };
 
-GithubPlugin discoveryPlugin({String minimum = '', int id = 1}) => GithubPlugin(
+GithubPlugin discoveryPlugin({
+  String minimum = '',
+  int id = 1,
+  String version = '1.2.3',
+}) => GithubPlugin(
   repository: GithubRepository(
     id: id,
     fullName: discoveryRepo,
@@ -56,9 +60,11 @@ GithubPlugin discoveryPlugin({String minimum = '', int id = 1}) => GithubPlugin(
   ),
   manifest: GithubPluginManifest.fromJson({
     ...discoveryManifest(),
+    'version': version,
+    'download_url': discoveryDownload.replaceFirst('/v1.2.3/', '/v$version/'),
     'minHostVersion': minimum,
   }),
-  downloadUrl: discoveryDownload,
-  releaseUrl: 'https://github.com/$discoveryRepo/releases/tag/v1.2.3',
+  downloadUrl: discoveryDownload.replaceFirst('/v1.2.3/', '/v$version/'),
+  releaseUrl: 'https://github.com/$discoveryRepo/releases/tag/v$version',
   publishedAt: '2026-10-08T00:00:00Z',
 );

@@ -221,16 +221,30 @@ String? githubUrlRepository(String address) {
   }
 }
 
-/// Version ordering requires known stable versions.
+/// Plugin releases accept three components or a daily release revision.
 int? comparePluginVersions(String a, String b) {
+  return _compareVersions(a, b, allowRevision: true);
+}
+
+int? _compareVersions(String a, String b, {bool allowRevision = false}) {
+  const part = r'(0|[1-9][0-9]{0,8})';
   final pattern = RegExp(
-    r'^(0|[1-9][0-9]{0,8})\.(0|[1-9][0-9]{0,8})\.(0|[1-9][0-9]{0,8})$',
+    '^$part\\.$part\\.$part${allowRevision ? '(?:\\.$part)?' : ''}'
+    r'$',
   );
-  final left = pattern.firstMatch(a.replaceFirst(RegExp(r'^v'), ''));
-  final right = pattern.firstMatch(b.replaceFirst(RegExp(r'^v'), ''));
-  if (left == null || right == null) return null;
-  for (var i = 1; i <= 3; i++) {
-    final comparison = int.parse(left[i]!).compareTo(int.parse(right[i]!));
+  final leftText = a.replaceFirst(RegExp(r'^v'), '');
+  final rightText = b.replaceFirst(RegExp(r'^v'), '');
+  if (!pattern.hasMatch(leftText) || !pattern.hasMatch(rightText)) return null;
+  final left = leftText.split('.').map(int.parse).toList();
+  final right = rightText.split('.').map(int.parse).toList();
+  for (
+    var i = 0;
+    i < (left.length > right.length ? left.length : right.length);
+    i++
+  ) {
+    final comparison = (i < left.length ? left[i] : 0).compareTo(
+      i < right.length ? right[i] : 0,
+    );
     if (comparison != 0) return comparison;
   }
   return 0;
@@ -245,7 +259,7 @@ PluginHostCompatibility pluginHostCompatibility(
   if (current == 'dev' || minimum.isEmpty) {
     return PluginHostCompatibility.compatible;
   }
-  final comparison = comparePluginVersions(current ?? '', minimum);
+  final comparison = _compareVersions(current ?? '', minimum);
   if (comparison == null) return PluginHostCompatibility.unknown;
   return comparison < 0
       ? PluginHostCompatibility.incompatible

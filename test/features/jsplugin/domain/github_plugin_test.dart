@@ -5,6 +5,25 @@ import 'package:songloft_flutter/features/jsplugin/domain/github_plugin.dart';
 import '../github_discovery_fixtures.dart';
 
 void main() {
+  test('插件发布序号参与版本比较，缺少序号视为零', () {
+    expect(comparePluginVersions('2026.10.15.1', '2026.10.15'), 1);
+    expect(comparePluginVersions('2026.10.15.10', '2026.10.15.9'), 1);
+    expect(comparePluginVersions('2026.10.16.0', '2026.10.15.99'), 1);
+    expect(comparePluginVersions('2026.10.15.0', '2026.10.15'), 0);
+    expect(comparePluginVersions('2026.10.15', '2026.10.15.1'), -1);
+    expect(comparePluginVersions('v2026.10.15.1', '2026.10.15'), 1);
+    for (final version in [
+      '2026.10.15.01',
+      '2026.10.15.1.2',
+      '2026.10.15.dev',
+    ]) {
+      expect(comparePluginVersions(version, '2026.10.15'), isNull);
+    }
+    expect(
+      pluginHostCompatibility('2.13.1', '2.13.1.1'),
+      PluginHostCompatibility.unknown,
+    );
+  });
   test('根清单允许省略或留空哈希，有值时仍校验格式', () {
     for (final hash in ['entryHash', 'zipHash']) {
       expect(
