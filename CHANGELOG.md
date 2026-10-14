@@ -2,6 +2,35 @@
 
 此文件记录 Songloft Flutter 客户端的版本变更，仅提供中文版本。版本 tag 的 Release 发布成功后，由 CI 根据 Conventional Commits 分类追加记录并提交到 `main`；滚动 dev 记录见 [GitHub Releases](https://github.com/songloft-org/songloft-player/releases/tag/dev)。
 
+## [v2.13.2] - 2026-10-14
+### :sparkles: 新增功能
+- [`d54f746`](https://github.com/songloft-org/songloft-player/commit/d54f7463e98000853972f7f4c8e2c2a2014d3299) - **appearance**: 添加减少透明度与增强对比度设置 *(提交者 [@hanxi](https://github.com/hanxi))*
+- [`708107b`](https://github.com/songloft-org/songloft-player/commit/708107b93820757b89a1fc05fd7127f48e25de40) - **player**: 优化胶囊播放器与底部导航的液态玻璃效果 *(提交者 [@hanxi](https://github.com/hanxi))*
+- [`c07ded3`](https://github.com/songloft-org/songloft-player/commit/c07ded3d10ff5244b2cb92281d1d2070c252d4af) - **cache**: 支持 Android 自定义歌曲缓存目录 *(提交者 [@hanxi](https://github.com/hanxi))*
+- [`67ea2be`](https://github.com/songloft-org/songloft-player/commit/67ea2be87b5c94d90aa12269fbdc10e3b9afbe1c) - **player**: 添加下一首播放并支持随机播放历史回退 *(提交者 [@hanxi](https://github.com/hanxi))*
+- [`15e3208`](https://github.com/songloft-org/songloft-player/commit/15e3208a36fe9876ce315a88d09e0f112d10ddcd) - **release**: 持久化中文变更日志并补充双语安装说明 *(提交者 [@hanxi](https://github.com/hanxi))*
+- [`2fef73d`](https://github.com/songloft-org/songloft-player/commit/2fef73df1b9d3b31c83360c0acc862c538089d6d) - **jsplugin**: 支持 GitHub Token 与商店客户端渐进加载 *(提交者 [@hanxi](https://github.com/hanxi))*
+- [`cacd69d`](https://github.com/songloft-org/songloft-player/commit/cacd69d22ee88ebed30b9d24c914a1d1fb66e9ac) - **player**: 支持全屏歌曲信息选择复制 *(提交者 [@hanxi](https://github.com/hanxi))*
+- [`1cb9b49`](https://github.com/songloft-org/songloft-player/commit/1cb9b4947cdc1c641507e9486b0a0024fc274e97) - **playlists**: 优化歌单浏览并支持隐藏首页电台 *(提交者 [@hanxi](https://github.com/hanxi))*
+- [`a0b2ae1`](https://github.com/songloft-org/songloft-player/commit/a0b2ae17194dd0a1acdaa7c0050ca4681e119c07) - **player**: 支持歌词页屏幕常亮配置 *(提交者 [@hanxi](https://github.com/hanxi))*
+
+### :bug: 问题修复
+- [`039d094`](https://github.com/songloft-org/songloft-player/commit/039d0942f94b4c0dc47ebcc22d1899abb12cf5b4) - **jsplugin**: 优先处理插件页面内返回操作 *(提交者 [@hanxi](https://github.com/hanxi))*
+- [`57db976`](https://github.com/songloft-org/songloft-player/commit/57db9766ac36b58f136b4e7ae41a2d1c51a079ce) - **windows**: 补齐 WebView2 移动通知与右键残留回归验证 *(提交者 [@hanxi](https://github.com/hanxi))*
+- [`3860205`](https://github.com/songloft-org/songloft-player/commit/3860205b0d8cf8449d8cf31746c254ef597c55e3) - **jsplugin**: 支持四段插件发布版本比较 *(提交者 [@hanxi](https://github.com/hanxi))*
+- [`da15d75`](https://github.com/songloft-org/songloft-player/commit/da15d75dd8640e8a4e1773ab4f63fe8500a8dc19) - **android**: 完善退出应用与通知停止清理（Ref songloft-org/songloft[#520](https://github.com/songloft-org/songloft-player/pull/520)） *(提交者 [@hanxi](https://github.com/hanxi))*
+
+### :recycle: 重构
+- [`17f15f1`](https://github.com/songloft-org/songloft-player/commit/17f15f18c23d098ec15a5b975eb946a892642749) - **jsplugin**: 将插件导航设置集中到插件管理页 *(提交者 [@hanxi](https://github.com/hanxi))*
+- [`5b4c304`](https://github.com/songloft-org/songloft-player/commit/5b4c30417aef3d12e9bd1ad37376c854b1ca4f71) - **settings**: 合并导航与插件设置 *(提交者 [@hanxi](https://github.com/hanxi))*
+
+### :memo: 文档更新
+- [`e24d7ea`](https://github.com/songloft-org/songloft-player/commit/e24d7eaf5f0d6a44fd2c178385f38135f35d3d56) - **ai**: 接入连续开发与经验复盘流程 *(提交者 [@hanxi](https://github.com/hanxi))*
+
+### :wrench: 维护工作
+- [`f7494d1`](https://github.com/songloft-org/songloft-player/commit/f7494d1b9dd6c1caacbf01437302b777310dc6fe) - release version 2.13.2 *(提交者 [@hanxi](https://github.com/hanxi))*
+
+
 ## 开发记录（截至 2026-10-10）
 
 以下列出近期变化，完整开发历史见 [Git 提交记录](https://github.com/songloft-org/songloft-player/commits/main/)。
@@ -17,3 +46,4 @@
 
 - [`5b4c304`](https://github.com/songloft-org/songloft-player/commit/5b4c30417aef3d12e9bd1ad37376c854b1ca4f71) — 合并导航与插件设置。
 - [`17f15f1`](https://github.com/songloft-org/songloft-player/commit/17f15f18c23d098ec15a5b975eb946a892642749) — 将插件导航设置集中到插件管理页。
+[v2.13.2]: https://github.com/songloft-org/songloft-player/compare/v2.13.1...v2.13.2
