@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../features/settings/data/theme_pack_api.dart';
 import 'app_dimensions.dart';
+import 'built_in_palette.dart';
 import 'responsive.dart';
 
 /// 自定义主题扩展，承载主题包特有的参数（圆角、渐变、玻璃色等）
@@ -123,7 +124,7 @@ class SongloftThemeExtension extends ThemeExtension<SongloftThemeExtension> {
 
 class AppTheme {
   // M3 Blue baseline — 与设计系统对齐
-  static const Color _defaultSeedColor = Color(0xFF415F91);
+  static final Color _defaultSeedColor = BuiltInPalette.blue.seedColor;
 
   /// 亮色主题
   /// [screenType] 屏幕类型，默认为 mobile
@@ -131,6 +132,7 @@ class AppTheme {
   static ThemeData lightTheme({
     ScreenType screenType = ScreenType.mobile,
     ThemePack? themePack,
+    Color? seedColor,
     bool reduceTransparency = false,
     bool increaseContrast = false,
   }) {
@@ -138,6 +140,7 @@ class AppTheme {
       Brightness.light,
       screenType,
       themePack,
+      seedColor,
       reduceTransparency,
       increaseContrast,
     );
@@ -149,6 +152,7 @@ class AppTheme {
   static ThemeData darkTheme({
     ScreenType screenType = ScreenType.mobile,
     ThemePack? themePack,
+    Color? seedColor,
     bool reduceTransparency = false,
     bool increaseContrast = false,
   }) {
@@ -156,6 +160,7 @@ class AppTheme {
       Brightness.dark,
       screenType,
       themePack,
+      seedColor,
       reduceTransparency,
       increaseContrast,
     );
@@ -166,6 +171,7 @@ class AppTheme {
     Brightness brightness,
     ScreenType screenType,
     ThemePack? themePack,
+    Color? builtInSeedColor,
     bool reduceTransparency,
     bool increaseContrast,
   ) {
@@ -174,7 +180,8 @@ class AppTheme {
 
     // 从主题包获取配色
     final themeColors = isLight ? themePack?.light : themePack?.dark;
-    final seedColor = themeColors?.seedColor ?? _defaultSeedColor;
+    final seedColor =
+        themeColors?.seedColor ?? builtInSeedColor ?? _defaultSeedColor;
 
     // 生成 ColorScheme
     var colorScheme = ColorScheme.fromSeed(

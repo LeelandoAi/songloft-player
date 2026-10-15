@@ -10,6 +10,7 @@ import '../lyric_adjust_page.dart';
 import '../providers/lyric_provider.dart';
 import '../providers/player_provider.dart';
 import 'karaoke_line.dart';
+import 'player_backdrop.dart';
 
 /// 歌词显示组件
 ///
@@ -163,7 +164,7 @@ class _LyricsViewState extends ConsumerState<LyricsView> {
           Text(
             message,
             style: theme.textTheme.bodyLarge?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+              color: PlayerBackdrop.colorsOf(context).secondary,
             ),
           ),
           if (_canRefetch) ...[
@@ -187,10 +188,11 @@ class _LyricsViewState extends ConsumerState<LyricsView> {
     bool isCurrent, {
     bool plain = false,
   }) {
-    final primary = theme.colorScheme.primary;
-    final dim = theme.colorScheme.onSurface.withValues(alpha: 0.5);
+    final colors = PlayerBackdrop.colorsOf(context);
+    final primary = colors.active;
+    final dim = colors.secondary;
     // 纯文本歌词无「当前行」概念，整体用较高可读性的中性色静态展示。
-    final plainColor = theme.colorScheme.onSurface.withValues(alpha: 0.85);
+    final plainColor = colors.active;
 
     Widget main;
     if (isCurrent && lyric.hasWords) {
@@ -225,7 +227,7 @@ class _LyricsViewState extends ConsumerState<LyricsView> {
           romaji,
           style: TextStyle(
             fontSize: isCurrent ? 13 : 12,
-            color: (isCurrent ? primary : dim).withValues(alpha: 0.75),
+            color: isCurrent ? primary : dim,
           ),
           textAlign: TextAlign.center,
           maxLines: 1,
@@ -240,7 +242,7 @@ class _LyricsViewState extends ConsumerState<LyricsView> {
           style: TextStyle(
             fontSize: isCurrent ? 14 : 13,
             fontWeight: isCurrent ? FontWeight.w500 : FontWeight.normal,
-            color: (isCurrent ? primary : dim).withValues(alpha: 0.85),
+            color: isCurrent ? primary : dim,
           ),
           textAlign: TextAlign.center,
           maxLines: 1,
@@ -272,16 +274,14 @@ class _LyricsViewState extends ConsumerState<LyricsView> {
               height: 24,
               child: CircularProgressIndicator(
                 strokeWidth: 2,
-                color: theme.colorScheme.primary,
+                color: PlayerBackdrop.colorsOf(context).active,
               ),
             ),
             const SizedBox(height: 12),
             Text(
               AppLocalizations.of(context).playerLyricsLoading,
               style: theme.textTheme.bodyLarge?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant.withValues(
-                  alpha: 0.6,
-                ),
+                color: PlayerBackdrop.colorsOf(context).secondary,
               ),
             ),
           ],
@@ -395,14 +395,14 @@ class _LyricsViewState extends ConsumerState<LyricsView> {
                   IconButton(
                     icon: const Icon(Icons.refresh, size: 22),
                     tooltip: AppLocalizations.of(context).playerLyricsRefetch,
-                    color: theme.colorScheme.primary,
+                    color: PlayerBackdrop.colorsOf(context).active,
                     onPressed: _refetchLyrics,
                   ),
                 if (showEdit)
                   IconButton(
                     icon: const Icon(Icons.tune, size: 22),
                     tooltip: AppLocalizations.of(context).playerAdjustLyrics,
-                    color: theme.colorScheme.primary,
+                    color: PlayerBackdrop.colorsOf(context).active,
                     onPressed: _openAdjustPage,
                   ),
               ],

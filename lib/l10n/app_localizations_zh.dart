@@ -275,6 +275,33 @@ class AppLocalizationsZh extends AppLocalizations {
   String get themeSystem => '系统';
 
   @override
+  String get themePaletteTitle => '内置配色';
+
+  @override
+  String get themePaletteDescription => '在此设备上使用，适配浅色与深色模式。';
+
+  @override
+  String get themePalettePackHint => '当前使用主题包，恢复默认后可选择内置配色。';
+
+  @override
+  String get themePaletteBlue => '星蓝';
+
+  @override
+  String get themePaletteTeal => '青碧';
+
+  @override
+  String get themePaletteForest => '森绿';
+
+  @override
+  String get themePaletteRose => '玫瑰';
+
+  @override
+  String get themePaletteAmber => '琥珀';
+
+  @override
+  String get themePaletteViolet => '紫藤';
+
+  @override
   String get themePackTitle => '主题包';
 
   @override

@@ -573,6 +573,60 @@ abstract class AppLocalizations {
   /// **'系统'**
   String get themeSystem;
 
+  /// No description provided for @themePaletteTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'内置配色'**
+  String get themePaletteTitle;
+
+  /// No description provided for @themePaletteDescription.
+  ///
+  /// In zh, this message translates to:
+  /// **'在此设备上使用，适配浅色与深色模式。'**
+  String get themePaletteDescription;
+
+  /// No description provided for @themePalettePackHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'当前使用主题包，恢复默认后可选择内置配色。'**
+  String get themePalettePackHint;
+
+  /// No description provided for @themePaletteBlue.
+  ///
+  /// In zh, this message translates to:
+  /// **'星蓝'**
+  String get themePaletteBlue;
+
+  /// No description provided for @themePaletteTeal.
+  ///
+  /// In zh, this message translates to:
+  /// **'青碧'**
+  String get themePaletteTeal;
+
+  /// No description provided for @themePaletteForest.
+  ///
+  /// In zh, this message translates to:
+  /// **'森绿'**
+  String get themePaletteForest;
+
+  /// No description provided for @themePaletteRose.
+  ///
+  /// In zh, this message translates to:
+  /// **'玫瑰'**
+  String get themePaletteRose;
+
+  /// No description provided for @themePaletteAmber.
+  ///
+  /// In zh, this message translates to:
+  /// **'琥珀'**
+  String get themePaletteAmber;
+
+  /// No description provided for @themePaletteViolet.
+  ///
+  /// In zh, this message translates to:
+  /// **'紫藤'**
+  String get themePaletteViolet;
+
   /// No description provided for @themePackTitle.
   ///
   /// In zh, this message translates to:

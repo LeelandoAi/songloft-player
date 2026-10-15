@@ -5,10 +5,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../features/player/domain/playback_context.dart';
 import '../network/server_entry.dart';
+import '../theme/built_in_palette.dart';
 
 /// 应用偏好设置存储
 class AppPreferences {
   static const _themeModeKey = 'theme_mode';
+  static const _builtInPaletteKey = 'built_in_palette';
   static const _localeKey = 'app_locale';
   static const _reduceTransparencyKey = 'reduce_transparency';
   static const _increaseContrastKey = 'increase_contrast';
@@ -54,6 +56,12 @@ class AppPreferences {
       _prefs.setBool(_reduceTransparencyKey, enabled);
   Future<bool> setIncreaseContrast(bool enabled) =>
       _prefs.setBool(_increaseContrastKey, enabled);
+
+  /// Device-local built-in palette, separate from server theme packs.
+  BuiltInPalette getBuiltInPalette() =>
+      BuiltInPalette.fromName(_prefs.getString(_builtInPaletteKey));
+  Future<bool> setBuiltInPalette(BuiltInPalette palette) =>
+      _prefs.setString(_builtInPaletteKey, palette.name);
 
   /// 获取主题模式
   ThemeMode getThemeMode() {

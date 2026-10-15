@@ -291,6 +291,35 @@ class AppLocalizationsEn extends AppLocalizations {
   String get themeSystem => 'System';
 
   @override
+  String get themePaletteTitle => 'Built-in colors';
+
+  @override
+  String get themePaletteDescription =>
+      'Saved on this device, for both light and dark modes.';
+
+  @override
+  String get themePalettePackHint =>
+      'A theme pack is active. Restore default to choose built-in colors.';
+
+  @override
+  String get themePaletteBlue => 'Blue';
+
+  @override
+  String get themePaletteTeal => 'Teal';
+
+  @override
+  String get themePaletteForest => 'Forest';
+
+  @override
+  String get themePaletteRose => 'Rose';
+
+  @override
+  String get themePaletteAmber => 'Amber';
+
+  @override
+  String get themePaletteViolet => 'Violet';
+
+  @override
   String get themePackTitle => 'Theme Packs';
 
   @override

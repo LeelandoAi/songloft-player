@@ -1,12 +1,9 @@
-import 'dart:ui';
-
-import 'package:flutter/foundation.dart' show defaultTargetPlatform, kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/backend/run_mode_provider.dart';
 import '../../../../core/theme/app_dimensions.dart';
-import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/color_extraction.dart';
 import '../../../../core/utils/url_helper.dart';
 import '../../../settings/presentation/providers/song_cache_provider.dart';
@@ -18,6 +15,7 @@ import '../queue_page.dart';
 import '../providers/audio_track_provider.dart';
 import 'audio_track_control.dart';
 import 'lyrics_view.dart';
+import 'player_backdrop.dart';
 import 'lyrics_screen_awake.dart';
 import 'play_controls.dart';
 import 'popup_controls.dart';
@@ -125,246 +123,118 @@ class _MobilePlayerState extends ConsumerState<MobilePlayer>
 
     final coverUrl = song.coverUrl;
 
-    final paletteAsync = ref.watch(playerBackgroundPaletteProvider(song));
+    final paletteAsync = ref.watch(coverColorsProvider(coverUrl));
     final palette = paletteAsync.value;
 
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
-      body: Stack(
-        children: [
-          // 背景模糊封面 / 无封面时的动态渐变
-          // 注意：Windows 平台（WebF 渲染引擎）上 ImageFiltered.blur 会创建
-          // 过大的 saveLayer 导致 Stack 后续子层不渲染，故 Windows 上跳过
-          // 模糊封面，改用取色渐变（songloft-org/songloft#382）。
-          if (coverUrl != null &&
-              (kIsWeb || defaultTargetPlatform != TargetPlatform.windows))
-            Positioned.fill(
-              child: ClipRect(
-                child: ExcludeSemantics(
-                  child: ImageFiltered(
-                    imageFilter: ImageFilter.blur(sigmaX: 70, sigmaY: 70),
-                    child: Image.network(
-                      UrlHelper.buildCoverUrl(coverUrl, width: 50),
-                      fit: BoxFit.cover,
-                      cacheWidth: 50,
-                      errorBuilder:
-                          (_, _, _) => Container(
-                            color: theme.colorScheme.surfaceContainerHighest,
-                          ),
-                    ),
-                  ),
-                ),
-              ),
-            )
-          else if (palette != null)
-            Positioned.fill(
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 800),
-                curve: Curves.easeInOut,
-                decoration: BoxDecoration(
-                  gradient: RadialGradient(
-                    center: Alignment.topLeft,
-                    radius: 1.5,
-                    colors: [
-                      palette.dominantColor.withValues(alpha: 0.6),
-                      palette.darkMutedColor ?? palette.dominantColor,
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          // 径向环境光晕
-          if (palette != null)
-            Positioned.fill(
-              child: IgnorePointer(
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: RadialGradient(
-                      center: const Alignment(-0.6, -0.5),
-                      radius: 1.2,
-                      colors: [
-                        (palette.vibrantColor ?? palette.dominantColor)
-                            .withValues(alpha: 0.22),
-                        Colors.transparent,
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          // 主题包自定义渐变层
-          if (Theme.of(
-                context,
-              ).extension<SongloftThemeExtension>()?.playerGradientColors !=
-              null)
-            Positioned.fill(
-              child: IgnorePointer(
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors:
-                          Theme.of(context)
-                              .extension<SongloftThemeExtension>()!
-                              .playerGradientColors!
-                              .map((c) => c.withValues(alpha: 0.4))
-                              .toList(),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          // 背景遮罩 - 动态取色渐变
-          Positioned.fill(
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 500),
-              curve: Curves.easeInOut,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    (palette?.darkMutedColor ?? theme.colorScheme.surface)
-                        .withValues(alpha: 0.7),
-                    theme.colorScheme.surface.withValues(alpha: 0.85),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          // 顶部渐变遮罩 — 保证顶部按钮在任何封面色下可见
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            height: 100,
-            child: IgnorePointer(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.black.withValues(alpha: 0.35),
-                      Colors.black.withValues(alpha: 0.0),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-          // 主内容
-          SafeArea(
-            child: Column(
-              children: [
-                // 顶部工具栏
-                _buildTopBar(context, notifier, state),
-                const SizedBox(height: 16),
-                // 封面/歌词 PageView
-                Expanded(
-                  flex: 4,
-                  child: Column(
-                    children: [
-                      Expanded(
-                        child: PageView(
-                          controller: _pageController,
-                          onPageChanged: (index) {
-                            setState(() {
-                              _currentPage = index;
-                            });
-                          },
-                          children: [
-                            // 页面1：视频歌曲渲染画面（支持的平台），否则封面（带唱片环旋转）
-                            Center(
-                              child: VideoStage(
-                                song: song,
-                                width: size.width * 0.75,
-                                height: size.width * 0.75,
-                                fallback: VinylRing(
-                                  rotationAnimation: _rotationController,
-                                  child: _buildCover(
-                                    context,
-                                    coverUrl,
-                                    size.width * 0.75,
-                                    palette: palette,
-                                  ),
+      body: PlayerBackdrop(
+        palette: palette,
+        child: SafeArea(
+          child: Column(
+            children: [
+              // 顶部工具栏
+              _buildTopBar(context, notifier, state),
+              const SizedBox(height: 16),
+              // 封面/歌词 PageView
+              Expanded(
+                flex: 4,
+                child: Column(
+                  children: [
+                    Expanded(
+                      child: PageView(
+                        controller: _pageController,
+                        onPageChanged: (index) {
+                          setState(() {
+                            _currentPage = index;
+                          });
+                        },
+                        children: [
+                          // 页面1：视频歌曲渲染画面（支持的平台），否则封面（带唱片环旋转）
+                          Center(
+                            child: VideoStage(
+                              song: song,
+                              width: size.width * 0.75,
+                              height: size.width * 0.75,
+                              fallback: VinylRing(
+                                rotationAnimation: _rotationController,
+                                child: _buildCover(
+                                  context,
+                                  coverUrl,
+                                  size.width * 0.75,
+                                  palette: palette,
                                 ),
                               ),
                             ),
-                            // 页面2：歌词
-                            LyricsScreenAwake(
-                              visible: _currentPage == 1,
-                              child: LyricsView(
-                                currentPosition: state.currentTime,
-                                onSeek: notifier.seek,
-                                song: song,
-                                editable: true,
-                              ),
+                          ),
+                          // 页面2：歌词
+                          LyricsScreenAwake(
+                            visible: _currentPage == 1,
+                            child: LyricsView(
+                              currentPosition: state.currentTime,
+                              onSeek: notifier.seek,
+                              song: song,
+                              editable: true,
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
-                      // 页面指示器
-                      const SizedBox(height: 12),
-                      _buildPageIndicator(theme),
-                    ],
-                  ),
+                    ),
+                    // 页面指示器
+                    const SizedBox(height: 12),
+                    _buildPageIndicator(theme),
+                  ],
                 ),
-                const SizedBox(height: 12),
-                // 歌曲信息
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.xl,
-                  ),
-                  child: Column(
-                    children: [
-                      Text(
-                        song.title,
-                        style: theme.textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 12),
+              // 歌曲信息
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+                child: Column(
+                  children: [
+                    Text(
+                      song.title,
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
                       ),
-                      const SizedBox(height: 8),
-                      Text(
-                        song.artist ??
-                            AppLocalizations.of(context).playerUnknownArtist,
-                        style: theme.textTheme.bodyLarge?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      song.artist ??
+                          AppLocalizations.of(context).playerUnknownArtist,
+                      style: theme.textTheme.bodyLarge?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
                       ),
-                    ],
-                  ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 24),
-                // 进度条
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.lg,
-                  ),
-                  child: PlayerProgressBar(
-                    position: state.currentTime,
-                    duration: state.duration,
-                    onSeek: notifier.seek,
-                  ),
+              ),
+              const SizedBox(height: 24),
+              // 进度条
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                child: PlayerProgressBar(
+                  position: state.currentTime,
+                  duration: state.duration,
+                  onSeek: notifier.seek,
                 ),
-                const SizedBox(height: 16),
-                // 主控制行（播放模式 + 上一首/播放/下一首 + 收藏）
-                _buildControlsRow(context, state, notifier),
-                const SizedBox(height: 20),
-                // 工具行（投屏 + 音量 + 队列 + 更多）
-                _buildToolBar(context, state, notifier),
-                const SizedBox(height: AppSpacing.md),
-              ],
-            ),
+              ),
+              const SizedBox(height: 16),
+              // 主控制行（播放模式 + 上一首/播放/下一首 + 收藏）
+              _buildControlsRow(context, state, notifier),
+              const SizedBox(height: 20),
+              // 工具行（投屏 + 音量 + 队列 + 更多）
+              _buildToolBar(context, state, notifier),
+              const SizedBox(height: AppSpacing.md),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -397,7 +267,7 @@ class _MobilePlayerState extends ConsumerState<MobilePlayer>
     PlayerState state,
   ) {
     final song = state.currentSong;
-    const topBarColor = Colors.white;
+    final topBarColor = Theme.of(context).colorScheme.onSurface;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8),

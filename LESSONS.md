@@ -30,3 +30,11 @@
 - 候选修复：本次候选补丁将 Windows 平台包 vendoring 到 `third_party/flutter_inappwebview_windows`，辅助 HWND 的 `WM_WINDOWPOSCHANGED` 默认处理后通知控制器；退出与窗口销毁均解绑，防重入与 HWND 复用。Windows 打包 CI 增加真实 HWND/comctl32 检查，ZIP 包含只读 `webview_hit_test.exe`，若仍复发可取证实际命中窗口。范围与验收见[补丁说明](third_party/flutter_inappwebview_windows/README.md)及[平台说明](docs/cn/platform-notes.md#windows-插件与桌面右键验收)。
 - Done right：Linux/GCC 12.2 `cmake` 与 `ctest` 通过（7 个原有坐标场景 + 8 个 observer 场景，目录 `/tmp/songloft-499-native-20261014-02`）；隔离副本删掉关键通知或显式解绑后均编译成功且目标测试失败，日志分别在 `/tmp/songloft-499-no-notify-final-20261014/validation.log`、`/tmp/songloft-499-no-detach-final-20261014/validation.log`。这属于破坏检查，不是旧包的 Windows 复现。Flutter 3.41.5 下 13 个插件相关测试、`flutter analyze`、格式和 diff 检查通过。Not run：Windows 完整编译、真实 HWND 检查、诊断工具运行及双屏/WebView2 输入验收；开发机为 Linux，用户也无 Windows 环境，待 CI 构建与报告人测试。
 - Seen 1× (2026-10-14)。状态：经验，#499 未完成实机验收。
+
+### LYRIC-001：歌词前景要按实际背景计算对比度
+
+- 范围：Flutter 手机与桌面全屏歌词，songloft-org/songloft#523。
+- 证据：2026-10-15，基线 `b80e03b47eefb1aaedf07d611b1d9d3c3d48257b` 的背景叠加封面深色与顶部黑罩，歌词直接使用主题 primary，译文/罗马音再降低透明度。隔离副本使用旧 `lyrics_view.dart` 配合新的柔和背景时，亮色当前行 5.17:1、暗色译文 5.82:1，均未达到本次 7:1 目标；两项渲染回归按预期失败，日志 `/tmp/songloft-523/before-lyrics.log`。
+- 规则：背景取色与前景一起设计；半透明文本要先合成到实际背景再测对比度，不能把 Material 在默认 surface 上的保障直接套到任意封面遮罩。缺失/失败封面要核对统一兜底，增强对比度要覆盖动态图层。
+- Done right：统一 `PlayerBackdrop` 将取色混合到当前 surface，按背景加强强调色；当前行/翻译/罗马音/逐字共用完整对比度。六种内置配色与极端封面的亮暗渐变采样通过，完整 716 项测试、静态分析、嵌入构建通过；实际浏览器切歌及缺失/失败封面比对见 [#523 记录](docs/cn/issue-523.md)。Not run：原生真机户外验收。
+- Seen 1× (2026-10-15)。状态：经验，未提交工作树对象见任务记录；发布状态另按 Git/CI 核对。

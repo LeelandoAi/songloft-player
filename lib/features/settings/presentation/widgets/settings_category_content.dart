@@ -40,6 +40,7 @@ import 'scan_manager.dart';
 import 'section_card.dart';
 import 'settings_master_detail.dart';
 import 'theme_selector.dart';
+import 'built_in_palette_selector.dart';
 import 'appearance_accessibility_settings.dart';
 import 'theme_pack_manager.dart';
 import 'language_selector.dart';
@@ -284,6 +285,7 @@ class _SettingsCategoryContentState
             ),
             child: ThemeSelector(),
           ),
+          const BuiltInPaletteSelector(),
           const Divider(height: 1),
           ListTile(
             leading: const Icon(Icons.color_lens_outlined),

@@ -33,6 +33,8 @@ import 'core/storage/app_preferences.dart';
 import 'core/storage/secure_storage.dart';
 import 'core/tracely/tracely_client.dart';
 import 'core/theme/app_theme.dart';
+import 'core/theme/built_in_palette.dart';
+import 'features/settings/presentation/providers/built_in_palette_provider.dart';
 import 'core/theme/widgets/liquid_glass_surface.dart';
 import 'core/theme/responsive.dart';
 import 'core/router/app_router.dart';
@@ -530,27 +532,33 @@ class SongloftApp extends ConsumerWidget {
     final locale = ref.watch(localeProvider);
     // 主题包：取已加载的值，加载中或出错时使用默认主题
     final activeThemePack = ref.watch(activeThemePackProvider).value;
+    final palette =
+        ref.watch(builtInPaletteProvider).value ?? BuiltInPalette.blue;
     return MaterialApp.router(
       title: 'Songloft',
       debugShowCheckedModeBanner: false,
       scrollBehavior: _AppScrollBehavior(),
       theme: AppTheme.lightTheme(
         themePack: activeThemePack,
+        seedColor: palette.seedColor,
         reduceTransparency: appearance.reduceTransparency,
         increaseContrast: appearance.increaseContrast,
       ),
       darkTheme: AppTheme.darkTheme(
         themePack: activeThemePack,
+        seedColor: palette.seedColor,
         reduceTransparency: appearance.reduceTransparency,
         increaseContrast: appearance.increaseContrast,
       ),
       highContrastTheme: AppTheme.lightTheme(
         themePack: activeThemePack,
+        seedColor: palette.seedColor,
         reduceTransparency: appearance.reduceTransparency,
         increaseContrast: true,
       ),
       highContrastDarkTheme: AppTheme.darkTheme(
         themePack: activeThemePack,
+        seedColor: palette.seedColor,
         reduceTransparency: appearance.reduceTransparency,
         increaseContrast: true,
       ),
@@ -595,12 +603,14 @@ class SongloftApp extends ConsumerWidget {
                   ? AppTheme.darkTheme(
                     screenType: screenType,
                     themePack: activeThemePack,
+                    seedColor: palette.seedColor,
                     reduceTransparency: appearance.reduceTransparency,
                     increaseContrast: increaseContrast,
                   )
                   : AppTheme.lightTheme(
                     screenType: screenType,
                     themePack: activeThemePack,
+                    seedColor: palette.seedColor,
                     reduceTransparency: appearance.reduceTransparency,
                     increaseContrast: increaseContrast,
                   ),
