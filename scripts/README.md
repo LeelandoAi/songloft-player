@@ -13,7 +13,7 @@
 
 ## 🔧 `bump-version.sh` — 版本发布
 
-用于自动化 Flutter 前端的版本发布流程。
+用于自动化 Flutter 前端的版本发布流程。**统一发布契约**：与 `clients/player-lynx/scripts/bump-version.sh`、父仓库 `scripts/bump-version.sh` 的参数与行为完全一致，可被父仓库 `scripts/release-all.sh` 一键编排直接调用。
 
 **用法**:
 
@@ -30,8 +30,15 @@
 # 正式发布（去掉预发布后缀：2.0.0-alpha.2 -> 2.0.0）
 ./scripts/bump-version.sh release
 
-# 仅预览，不实际修改
+# 直接指定新版本（必须高于当前版本）
+./scripts/bump-version.sh 2.1.0
+
+# 仅预览计划，不修改文件、不打 tag、不联网
 ./scripts/bump-version.sh minor --dry-run
+
+# 跳过交互确认 / 只创建本地 commit+tag 不推送
+./scripts/bump-version.sh patch --yes
+./scripts/bump-version.sh patch --no-push
 
 # 查看帮助
 ./scripts/bump-version.sh --help
@@ -40,19 +47,21 @@
 **脚本流程**：
 
 1. 从 `pubspec.yaml` 读取当前版本号
-2. 根据升级类型（release/major/minor/patch）计算新版本
-3. 更新 `pubspec.yaml` 中的版本号（保留 build number）
-4. Git commit + 创建 annotated tag（格式 `v{version}`）+ push
+2. 根据升级类型（release/major/minor/patch）或显式版本计算新版本，新版本必须高于当前版本
+3. 预检：`main` 分支、工作树干净、`v<新>` tag 本地与远程均不存在、本地包含 `origin/main`
+4. 更新 `pubspec.yaml` 中的版本号（保留 `+build number`）
+5. Git commit + 创建 annotated tag（格式 `v{version}`）+ `git push --atomic` 一次推送 main 与该 tag
 
 推送 tag 后由 `.github/workflows/build-and-release.yml` 自动完成多平台构建和 GitHub Release。
 
 Release 正文使用 `.github/release-notes.md` 中的中英双语安装说明，并追加分类提交记录。版本 tag 发布成功后，独立 job 基于最新 `main` 更新根目录的中文 `CHANGELOG.md` 并提交回仓库；滚动 dev 不写入该文件。不同版本的日志更新串行执行，不触发新一轮构建。
 
 **安全机制**：
-- 检查 Git 仓库环境
-- 未提交更改时提示确认
-- 关键步骤需要交互式确认
-- 标签冲突时提示是否覆盖
+
+- 任一预检失败即退出，先于任何写操作；`--dry-run` 零写入零联网
+- 已发布的 tag **永不覆盖**；失败后保留现场（不自动删 tag / reset），按本文档人工处理
+- 非交互环境用 `--yes`；`--no-push` 可先本地验证再手动 `git push --atomic origin HEAD:refs/heads/main refs/tags/v<版本>`
+- stdout 末行输出 `v<版本>`，日志走 stderr，方便链式调用（`release-all.sh` 依赖此约定）
 
 ## 🔧 `build-frontend.sh` — 多平台构建
 

@@ -1,309 +1,285 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-# Songloft Flutter 前端版本发布脚本
-# 用法：./scripts/release-frontend.sh [release|major|minor|patch] [--dry-run]
+# Songloft Flutter 前端版本发布脚本（统一发布契约：与 clients/player-lynx、父仓库 bump-version 完全一致）
+#
+# 用法：./scripts/bump-version.sh [major|minor|patch|release|X.Y.Z[-prerelease]] [--dry-run] [--yes] [--no-push]
 # 示例：
-#   ./scripts/release-frontend.sh release          # 2.0.0-alpha.2 -> 2.0.0（去掉预发布后缀）
-#   ./scripts/release-frontend.sh patch             # 2.0.0 -> 2.0.1
-#   ./scripts/release-frontend.sh minor --dry-run   # 仅预览，不修改
+#   ./scripts/bump-version.sh release          # 2.0.0-alpha.2 -> 2.0.0（去掉预发布后缀）
+#   ./scripts/bump-version.sh patch            # 2.0.0 -> 2.0.1
+#   ./scripts/bump-version.sh minor --dry-run  # 仅预览，不修改、不联网
 #
-# 流程：
-#   1. 更新 pubspec.yaml 中的版本号
-#   2. git commit + tag + push（push tag 后由 .github/workflows/build-and-release.yml
-#      完成多平台构建、GitHub Release，以及 CHANGELOG 生成）
+# 契约：
+#   1. 预检（先于任何写操作）：main 分支、工作树干净、新版本高于当前版本、
+#      v<新> tag 本地与远程均不存在、本地 main 包含 origin/main。
+#   2. 更新 pubspec.yaml 的 version（保留 +build number）。
+#   3. commit + annotated tag；git push --atomic 一次推送 main 与该 tag（--no-push 跳过）。
+#      已发布的 tag 永不覆盖；失败后保留现场，不自动回滚。
+#   4. 最后一行 stdout 输出新版本号（带 v 前缀），方便链式调用。
 #
-# 最后一行 stdout 输出新版本号（带 v 前缀），方便链式调用。
+# 推送 tag 后由 .github/workflows/build-and-release.yml 完成多平台构建与 GitHub Release。
 
-set -e
+set -euo pipefail
 
-# 颜色定义
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
 YELLOW='\033[1;33m'
 NC='\033[0m'
 
-# ============================================================
-# 参数解析
-# ============================================================
-BUMP_TYPE=""
-DRY_RUN=false
+log_info() { echo -e "${BLUE}$1${NC}" >&2; }
+log_ok()   { echo -e "${GREEN}✓${NC} $1" >&2; }
+log_warn() { echo -e "${YELLOW}警告：$1${NC}" >&2; }
+log_err()  { echo -e "${RED}错误：$1${NC}" >&2; }
 
-for arg in "$@"; do
-    case "$arg" in
-        release|major|minor|patch)
-            BUMP_TYPE="$arg"
-            ;;
-        --dry-run)
-            DRY_RUN=true
-            ;;
-        -h|--help)
-            echo "Songloft Flutter 前端版本发布工具"
-            echo ""
-            echo "用法:"
-            echo "  $0 [release|major|minor|patch] [--dry-run]"
-            echo ""
-            echo "参数:"
-            echo "  release  - 正式发布（去掉预发布后缀：2.0.0-alpha.2 -> 2.0.0）"
-            echo "  major    - 主版本号升级 (1.0.0 -> 2.0.0)"
-            echo "  minor    - 次版本号升级 (1.0.0 -> 1.1.0)"
-            echo "  patch    - 补丁版本号升级 (1.0.0 -> 1.0.1，默认)"
-            echo "  --dry-run - 仅打印将要执行的操作，不实际修改文件"
-            echo ""
-            echo "示例:"
-            echo "  $0 release             # 2.0.0-alpha.2 -> 2.0.0"
-            echo "  $0 patch               # 2.0.0 -> 2.0.1"
-            echo "  $0 minor --dry-run     # 仅预览，不修改"
-            exit 0
-            ;;
-        *)
-            echo -e "${RED}错误：未知参数 '$arg'${NC}" >&2
-            echo "用法：$0 [release|major|minor|patch] [--dry-run]" >&2
-            exit 1
-            ;;
-    esac
-done
-
-# 默认 patch
-BUMP_TYPE="${BUMP_TYPE:-patch}"
-
-# ============================================================
-# 工具函数
-# ============================================================
-
-# 获取脚本所在目录
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 FRONTEND_DIR="$(dirname "$SCRIPT_DIR")"
 PUBSPEC_FILE="$FRONTEND_DIR/pubspec.yaml"
 
-log_info() {
-    echo -e "${BLUE}$1${NC}" >&2
+usage() {
+    echo "Songloft Flutter 前端版本发布工具（统一发布契约）"
+    echo ""
+    echo "用法:"
+    echo "  $0 [major|minor|patch|release|X.Y.Z[-prerelease]] [--dry-run] [--yes] [--no-push]"
+    echo ""
+    echo "参数:"
+    echo "  major|minor|patch  - 对应位 +1，低位清零（默认 patch）"
+    echo "  release            - 去掉当前版本的预发布后缀（2.0.0-alpha.2 -> 2.0.0）"
+    echo "  X.Y.Z[-prerelease] - 直接指定新版本，必须高于当前版本"
+    echo "  --dry-run          - 仅打印计划，不修改文件、不打 tag、不联网"
+    echo "  --yes              - 跳过交互确认"
+    echo "  --no-push          - 只创建本地 commit/tag，不推送"
+    echo ""
+    echo "输出:"
+    echo "  最后一行 stdout 输出新版本号（带 v 前缀），如：v2.0.1"
+    echo ""
+    echo "示例:"
+    echo "  $0 release             # 2.0.0-alpha.2 -> 2.0.0"
+    echo "  $0 patch               # 2.0.0 -> 2.0.1"
+    echo "  $0 minor --dry-run     # 仅预览，不修改"
 }
 
-log_ok() {
-    echo -e "${GREEN}✓${NC} $1" >&2
-}
-
-log_warn() {
-    echo -e "${YELLOW}警告：$1${NC}" >&2
-}
-
-log_err() {
-    echo -e "${RED}错误：$1${NC}" >&2
-}
-
-# 获取当前版本号（从 pubspec.yaml，去掉 build number）
-get_current_version() {
-    if [ ! -f "$PUBSPEC_FILE" ]; then
-        log_err "找不到 $PUBSPEC_FILE"
-        exit 1
-    fi
-
-    local version_line
-    version_line=$(grep '^version:' "$PUBSPEC_FILE" | head -1)
-
-    if [ -z "$version_line" ]; then
-        log_err "pubspec.yaml 中找不到 version 字段"
-        exit 1
-    fi
-
-    # 提取版本号（去掉 "version: " 前缀和 "+build" 后缀）
-    echo "$version_line" | sed 's/version: //' | cut -d'+' -f1 | tr -d '[:space:]'
-}
-
-# 提取基础版本号（去掉预发布后缀：2.0.0-alpha.2 -> 2.0.0）
-strip_prerelease() {
-    echo "$1" | cut -d'-' -f1
-}
-
-# 升级版本号
-bump_version() {
-    local version="$1"
-    local bump_type="$2"
-
-    # 先去掉预发布后缀
-    version=$(strip_prerelease "$version")
-
-    local major minor patch
-    major=$(echo "$version" | cut -d. -f1)
-    minor=$(echo "$version" | cut -d. -f2)
-    patch=$(echo "$version" | cut -d. -f3)
-
-    if ! [[ "$major" =~ ^[0-9]+$ ]] || ! [[ "$minor" =~ ^[0-9]+$ ]] || ! [[ "$patch" =~ ^[0-9]+$ ]]; then
-        log_err "无效的版本号格式 '$version'"
-        exit 1
-    fi
-
-    case "$bump_type" in
-        release)
-            # 直接使用基础版本号（去掉预发布后缀即可）
+BUMP=""
+DRY_RUN=false
+ASSUME_YES=false
+NO_PUSH=false
+for arg in "$@"; do
+    case "$arg" in
+        major|minor|patch|release) BUMP="$arg" ;;
+        [0-9]*)
+            # 显式版本号 X.Y.Z[-prerelease]
+            if [[ "$arg" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-([0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*))?$ ]]; then
+                BUMP="$arg"
+            else
+                log_err "未知参数 '$arg'"; usage >&2; exit 1
+            fi
             ;;
-        major)
-            major=$((major + 1))
-            minor=0
-            patch=0
-            ;;
-        minor)
-            minor=$((minor + 1))
-            patch=0
-            ;;
-        patch)
-            patch=$((patch + 1))
-            ;;
+        --dry-run) DRY_RUN=true ;;
+        --yes) ASSUME_YES=true ;;
+        --no-push) NO_PUSH=true ;;
+        -h|--help) usage; exit 0 ;;
+        *) log_err "未知参数 '$arg'"; usage >&2; exit 1 ;;
     esac
+done
+BUMP="${BUMP:-patch}"
 
+# ---------- semver 工具（与 clients/player-lynx/scripts/release-lib.mjs 语义一致） ----------
+
+validate_version() {
+    local v="$1"
+    if ! printf '%s' "$v" | grep -Eq '^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-([0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*))?$'; then
+        log_err "无效的版本号格式 '$v'"
+        exit 1
+    fi
+    if [[ "$v" == *-* ]]; then
+        local pre="${v#*-}" part
+        local -a parts
+        IFS=. read -ra parts <<< "$pre"
+        for part in "${parts[@]}"; do
+            if [[ "$part" =~ ^0[0-9]+$ ]]; then
+                log_err "无效的预发布标识 '$v'"
+                exit 1
+            fi
+        done
+    fi
+}
+
+base_of() { echo "${1%%-*}"; }
+pre_of()  { case "$1" in *-*) echo "${1#*-}";; *) echo "";; esac; }
+
+# semver_cmp A B -> 输出 -1 / 0 / 1
+semver_cmp() {
+    local a="$1" b="$2"
+    local ab bb apre bpre
+    ab=$(base_of "$a"); bb=$(base_of "$b")
+    apre=$(pre_of "$a"); bpre=$(pre_of "$b")
+    local -a A=() B=()
+    IFS=. read -ra A <<< "$ab"
+    IFS=. read -ra B <<< "$bb"
+    local i
+    for i in 0 1 2; do
+        if (( A[i] > B[i] )); then echo 1; return; fi
+        if (( A[i] < B[i] )); then echo -1; return; fi
+    done
+    if [[ -z "$apre" && -z "$bpre" ]]; then echo 0; return; fi
+    if [[ -z "$apre" ]]; then echo 1; return; fi
+    if [[ -z "$bpre" ]]; then echo -1; return; fi
+    local -a PA=() PB=()
+    IFS=. read -ra PA <<< "$apre"
+    IFS=. read -ra PB <<< "$bpre"
+    local n=$(( ${#PA[@]} > ${#PB[@]} ? ${#PA[@]} : ${#PB[@]} ))
+    for ((i = 0; i < n; i++)); do
+        local x="${PA[i]:-}" y="${PB[i]:-}"
+        if [[ -z "$x" ]]; then echo -1; return; fi
+        if [[ -z "$y" ]]; then echo 1; return; fi
+        local xn=false yn=false
+        [[ "$x" =~ ^[0-9]+$ ]] && xn=true
+        [[ "$y" =~ ^[0-9]+$ ]] && yn=true
+        if $xn && $yn; then
+            if (( 10#$x > 10#$y )); then echo 1; return; fi
+            if (( 10#$x < 10#$y )); then echo -1; return; fi
+        elif $xn; then echo -1; return
+        elif $yn; then echo 1; return
+        else
+            if [[ "$x" > "$y" ]]; then echo 1; return; fi
+            if [[ "$x" < "$y" ]]; then echo -1; return; fi
+        fi
+    done
+    echo 0
+}
+
+bump_version() {
+    local version="$1" kind="$2"
+    local base major minor patch
+    base=$(base_of "$version")
+    IFS=. read -r major minor patch <<< "$base"
+    case "$kind" in
+        release) ;;
+        major) major=$((major + 1)); minor=0; patch=0 ;;
+        minor) minor=$((minor + 1)); patch=0 ;;
+        patch) patch=$((patch + 1)) ;;
+        *) echo "$kind"; return ;;
+    esac
     echo "${major}.${minor}.${patch}"
 }
 
-# 更新 pubspec.yaml
-update_pubspec() {
-    local new_version=$1
+# ---------- 主流程 ----------
 
-    # 获取当前 build number
-    local current_version_line build_number
-    current_version_line=$(grep '^version:' "$PUBSPEC_FILE" | head -1)
-
-    if [[ "$current_version_line" == *"+"* ]]; then
-        build_number=$(echo "$current_version_line" | sed 's/.*+//' | tr -d '[:space:]')
-    else
-        build_number="1"
-    fi
-
-    local new_version_full="${new_version}+${build_number}"
-
-    if [[ "$OSTYPE" == "darwin"* ]]; then
-        sed -i '' "s/^version: .*/version: ${new_version_full}/" "$PUBSPEC_FILE"
-    else
-        sed -i "s/^version: .*/version: ${new_version_full}/" "$PUBSPEC_FILE"
-    fi
-
-    log_ok "pubspec.yaml 已更新为 ${new_version_full}"
-}
-
-# ============================================================
-# 主流程
-# ============================================================
 main() {
     log_info "=== Songloft Flutter 前端版本发布工具 ==="
-    if [ "$DRY_RUN" = true ]; then
-        log_warn "DRY-RUN 模式：不会实际修改任何文件"
-    fi
-    echo "" >&2
 
-    # 检查 git 仓库
     if ! git rev-parse --git-dir > /dev/null 2>&1; then
-        log_err "当前目录不是 git 仓库"
-        exit 1
+        log_err "当前目录不是 git 仓库"; exit 1
     fi
-
-    # 检查 pubspec.yaml
     if [ ! -f "$PUBSPEC_FILE" ]; then
-        log_err "未找到 $PUBSPEC_FILE，请在项目根目录运行此脚本"
-        exit 1
+        log_err "未找到 $PUBSPEC_FILE"; exit 1
     fi
 
-    # 获取当前版本
-    local current_version
-    current_version=$(get_current_version)
-    if [ -z "$current_version" ]; then
-        log_err "无法从 pubspec.yaml 读取版本号"
-        exit 1
+    # 在子仓库内操作（脚本可能从任意目录被调用）
+    cd "$FRONTEND_DIR"
+
+    local current
+    current=$(grep '^version:' "$PUBSPEC_FILE" | head -1 | sed 's/version: //' | cut -d'+' -f1 | tr -d '[:space:]')
+    if [ -z "$current" ]; then
+        log_err "无法从 pubspec.yaml 读取版本号"; exit 1
     fi
+    validate_version "$current"
 
-    # 计算新版本
-    local new_version
-    new_version=$(bump_version "$current_version" "$BUMP_TYPE")
+    local new
+    new=$(bump_version "$current" "$BUMP")
+    validate_version "$new"
+    local cmp
+    cmp=$(semver_cmp "$new" "$current")
+    if [ "$cmp" != "1" ]; then
+        log_err "新版本 ${new} 必须高于当前版本 ${current}"; exit 1
+    fi
+    local tag="v${new}"
 
-    log_info "当前版本: ${current_version}"
-    log_info "新版本:   ${new_version}"
-    log_info "升级类型: ${BUMP_TYPE}"
-    echo "" >&2
-
-    # 检查版本号是否有变化
-    if [ "$current_version" = "$new_version" ]; then
-        log_warn "版本号未变化（当前已是 ${new_version}），无需发布"
+    log_info "当前版本: ${current}"
+    log_info "新版本:   ${new}"
+    log_info "升级类型: ${BUMP}"
+    echo "文件: pubspec.yaml（保留 +build number）" >&2
+    echo "Commit: chore: release version ${new}" >&2
+    echo "Tag: ${tag}" >&2
+    echo "Push: $([ "$NO_PUSH" = true ] && echo disabled || echo 'main + tag (atomic)')" >&2
+    if [ "$DRY_RUN" = true ]; then
+        log_warn "DRY-RUN 模式：不会修改任何文件、不打 tag、不联网"
+        echo "$tag"
         exit 0
     fi
 
-    if [ "$DRY_RUN" = false ]; then
-        read -p "确认发布版本 ${new_version}？(y/N) " -n 1 -r
-        echo
-        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-            echo -e "${RED}已取消${NC}"
-            exit 1
+    # 写操作前的预检
+    if [ "$(git branch --show-current)" != "main" ]; then
+        log_err "发布必须在 main 分支"; exit 1
+    fi
+    if [ -n "$(git status --porcelain)" ]; then
+        log_err "工作树必须干净，请先提交或保留你的改动"; exit 1
+    fi
+    if git rev-parse "$tag" > /dev/null 2>&1; then
+        log_err "本地已存在 tag ${tag}；已发布的版本永不覆盖"; exit 1
+    fi
+    local remote_tags
+    if ! remote_tags=$(git ls-remote --tags origin "refs/tags/${tag}" 2>&1); then
+        log_err "无法检查远程 tag：${remote_tags}"; exit 1
+    fi
+    if [ -n "$remote_tags" ]; then
+        log_err "远程已存在 tag ${tag}；已发布的版本永不覆盖"; exit 1
+    fi
+    if ! git fetch origin main > /dev/null 2>&1; then
+        log_err "无法 fetch origin/main（离线或无权限）"; exit 1
+    fi
+    if ! git merge-base --is-ancestor origin/main HEAD; then
+        log_err "本地 main 落后或与 origin/main 分叉，请先同步"; exit 1
+    fi
+
+    if [ "$ASSUME_YES" != true ]; then
+        read -r -p "确认发布版本 ${new}？(y/N) " reply </dev/tty || reply=""
+        if [[ ! "$reply" =~ ^[Yy] ]]; then
+            log_err "已取消"; exit 1
         fi
     fi
 
     # CI 环境：自动配置 git user
     if [ -z "$(git config user.email 2>/dev/null)" ]; then
         log_warn "git user.email 未设置，自动配置为 CI 用户"
-        if [ "$DRY_RUN" = false ]; then
-            git config user.email 'ci@songloft'
-            git config user.name 'Songloft CI'
-        fi
+        git config user.email 'ci@songloft'
+        git config user.name 'Songloft CI'
     fi
 
-    # 1. 更新 pubspec.yaml
-    log_info "[1/4] 更新 pubspec.yaml 中的版本号..."
-    if [ "$DRY_RUN" = true ]; then
-        echo -e "${YELLOW}[dry-run]${NC} pubspec.yaml: version ${current_version} -> ${new_version}" >&2
+    log_info "[1/3] 更新 pubspec.yaml 中的版本号..."
+    local version_line build_number
+    version_line=$(grep '^version:' "$PUBSPEC_FILE" | head -1)
+    if [[ "$version_line" == *"+"* ]]; then
+        build_number=$(echo "$version_line" | sed 's/.*+//' | tr -d '[:space:]')
     else
-        update_pubspec "$new_version"
+        build_number="1"
     fi
-    log_ok "pubspec.yaml 已更新"
+    local new_version_full="${new}+${build_number}"
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        sed -i '' "s/^version: .*/version: ${new_version_full}/" "$PUBSPEC_FILE"
+    else
+        sed -i "s/^version: .*/version: ${new_version_full}/" "$PUBSPEC_FILE"
+    fi
+    log_ok "pubspec.yaml 已更新为 ${new_version_full}"
 
-    # 2. 提交更改
-    log_info "[2/4] 提交更改到 git..."
-    if [ "$DRY_RUN" = true ]; then
-        echo -e "${YELLOW}[dry-run]${NC} git add pubspec.yaml" >&2
-        echo -e "${YELLOW}[dry-run]${NC} git commit -m 'chore: release version ${new_version}'" >&2
-    else
-        git add "$PUBSPEC_FILE"
-        if ! git diff-index --quiet --cached HEAD --; then
-            git commit -m "chore: release version ${new_version}"
-            log_ok "更改已提交"
-        else
-            log_warn "没有检测到需要提交的更改"
-        fi
-    fi
+    log_info "[2/3] 提交更改并创建 git tag..."
+    git add pubspec.yaml
+    git commit -m "chore: release version ${new}"
+    git tag -a "$tag" -m "Release version ${new}"
+    log_ok "git commit 和 tag ${tag} 已创建"
 
-    # 3. 创建 git tag
-    log_info "[3/4] 创建 git tag..."
-    local tag_name="v${new_version}"
-    if [ "$DRY_RUN" = true ]; then
-        echo -e "${YELLOW}[dry-run]${NC} git tag -a '${tag_name}' -m 'Release version ${new_version}'" >&2
+    log_info "[3/3] 推送更改和 tag..."
+    if [ "$NO_PUSH" = true ]; then
+        log_warn "--no-push：commit 与 tag 仅保留在本地"
     else
-        if git rev-parse "$tag_name" >/dev/null 2>&1; then
-            log_warn "Git 标签 '${tag_name}' 已存在"
-            read -p "是否覆盖现有标签？(y/N) " -n 1 -r
-            echo
-            if [[ $REPLY =~ ^[Yy]$ ]]; then
-                git tag -d "$tag_name" >/dev/null 2>&1 || true
-                git push origin ":refs/tags/$tag_name" >/dev/null 2>&1 || true
-                log_ok "已删除旧标签"
-            else
-                echo -e "${RED}已取消${NC}"
-                exit 1
-            fi
-        fi
-        git tag -a "$tag_name" -m "Release version ${new_version}"
+        git push --atomic origin "HEAD:refs/heads/main" "refs/tags/${tag}"
+        log_ok "已推送到远程仓库"
     fi
-    log_ok "Git 标签 ${tag_name} 已创建"
-
-    # 4. 推送
-    log_info "[4/4] 推送更改和 tag..."
-    if [ "$DRY_RUN" = true ]; then
-        echo -e "${YELLOW}[dry-run]${NC} git push --follow-tags" >&2
-    else
-        git push --follow-tags
-    fi
-    log_ok "已推送到远程仓库"
 
     echo "" >&2
-    log_info "Release URL: https://github.com/songloft-org/songloft-player/releases/tag/${tag_name}"
+    log_info "Release URL: https://github.com/songloft-org/songloft-player/releases/tag/${tag}"
 
     # 最后一行 stdout 输出新版本号（带 v 前缀），方便链式调用
-    echo "v${new_version}"
+    echo "$tag"
 }
 
 main

@@ -13,7 +13,7 @@ This directory contains build and release scripts for the Songloft Flutter front
 
 ## 🔧 `bump-version.sh` — Versioning & Release
 
-Automates the Flutter frontend version release process.
+Automates the Flutter frontend version release process. **Unified release contract**: parameters and behavior are identical to `clients/player-lynx/scripts/bump-version.sh` and the parent repo's `scripts/bump-version.sh`, so the parent's `scripts/release-all.sh` can orchestrate them directly.
 
 **Usage**:
 
@@ -30,8 +30,15 @@ Automates the Flutter frontend version release process.
 # Formal release (strip pre-release suffix: 2.0.0-alpha.2 -> 2.0.0)
 ./scripts/bump-version.sh release
 
-# Dry run — preview only, no changes made
+# Explicit new version (must be newer than the current one)
+./scripts/bump-version.sh 2.1.0
+
+# Dry run — preview only: no file changes, no tags, no network
 ./scripts/bump-version.sh minor --dry-run
+
+# Skip the interactive confirmation / keep commit+tag local
+./scripts/bump-version.sh patch --yes
+./scripts/bump-version.sh patch --no-push
 
 # Show help
 ./scripts/bump-version.sh --help
@@ -40,19 +47,21 @@ Automates the Flutter frontend version release process.
 **What the script does**:
 
 1. Reads the current version from `pubspec.yaml`
-2. Calculates the new version based on the bump type (release/major/minor/patch)
-3. Updates `pubspec.yaml` version (preserving the build number)
-4. Git commit + creates an annotated tag (`v{version}`) + push
+2. Computes the new version from the bump type (release/major/minor/patch) or the explicit argument; the new version must be newer
+3. Preflight: on `main`, clean worktree, `v<new>` tag absent locally and remotely, local main contains `origin/main`
+4. Updates `pubspec.yaml` version (preserving the `+build number`)
+5. Git commit + annotated tag (`v{version}`) + `git push --atomic` of main and that tag in one shot
 
 After the tag is pushed, `.github/workflows/build-and-release.yml` automatically handles multi-platform builds and GitHub Release creation.
 
 Release bodies use the Chinese and English installation notes in `.github/release-notes.md`, followed by categorized commits. After a version-tag release succeeds, a separate job updates the Chinese-only root `CHANGELOG.md` from the latest `main` and commits it back to the repository. Rolling dev builds do not write this file. Changelog updates for different versions run serially and do not trigger another build.
 
 **Safety features**:
-- Validates Git repository environment
-- Prompts for confirmation on uncommitted changes
-- Interactive confirmation for key steps
-- Handles tag conflicts with overwrite prompt
+
+- Any failed preflight exits before the first write; `--dry-run` performs no writes and no network calls
+- Published tags are **never overwritten**; on failure the local state is kept (no tag deletion, no reset) for manual handling per this doc
+- Use `--yes` in non-interactive environments; `--no-push` lets you verify locally and later run `git push --atomic origin HEAD:refs/heads/main refs/tags/v<version>` yourself
+- The last stdout line prints `v<version>` while logs go to stderr, so the output chains cleanly (the parent's `release-all.sh` relies on this)
 
 ## 🔧 `build-frontend.sh` — Multi-Platform Build
 
