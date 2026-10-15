@@ -1139,7 +1139,7 @@
   "playlistSortCustom": "Custom order",
   "playlistSortRecentlyAdded": "Recently added",
   "playlistSortFileTime": "File time",
-  "playlistSortTitle": "Title",
+  "playlistSortTitle": "Song name",
   "playlistSortArtist": "Artist",
   "playlistSortDuration": "Duration",
   "playlistSortFileSize": "File Size",

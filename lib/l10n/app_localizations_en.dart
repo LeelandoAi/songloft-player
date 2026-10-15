@@ -2165,7 +2165,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get playlistSortFileTime => 'File time';
 
   @override
-  String get playlistSortTitle => 'Title';
+  String get playlistSortTitle => 'Song name';
 
   @override
   String get playlistSortArtist => 'Artist';

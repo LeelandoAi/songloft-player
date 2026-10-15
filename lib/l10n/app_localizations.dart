@@ -3912,7 +3912,7 @@ abstract class AppLocalizations {
   /// No description provided for @playlistSortTitle.
   ///
   /// In zh, this message translates to:
-  /// **'标题'**
+  /// **'歌曲名称'**
   String get playlistSortTitle;
 
   /// No description provided for @playlistSortArtist.

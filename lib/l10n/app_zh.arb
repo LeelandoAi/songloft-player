@@ -1245,7 +1245,7 @@
   "playlistSortCustom": "自定义顺序",
   "playlistSortRecentlyAdded": "最近加入",
   "playlistSortFileTime": "文件时间",
-  "playlistSortTitle": "标题",
+  "playlistSortTitle": "歌曲名称",
   "playlistSortArtist": "艺术家",
   "playlistSortDuration": "时长",
   "playlistSortFileSize": "文件大小",

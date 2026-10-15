@@ -2104,7 +2104,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get playlistSortFileTime => '文件时间';
 
   @override
-  String get playlistSortTitle => '标题';
+  String get playlistSortTitle => '歌曲名称';
 
   @override
   String get playlistSortArtist => '艺术家';
