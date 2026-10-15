@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:audio_service/audio_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:just_audio/just_audio.dart' as ja;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:songloft_flutter/core/audio/audio_service.dart';
 import 'package:songloft_flutter/shared/models/song.dart';
 
@@ -73,6 +74,7 @@ class _Player implements ja.AudioPlayer {
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  setUp(() => SharedPreferences.setMockInitialValues({}));
   for (final failStop in [false, true]) {
     test(
       'late events cannot resurrect stopped session (failure=$failStop)',

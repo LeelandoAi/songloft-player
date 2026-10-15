@@ -340,6 +340,7 @@ void main(List<String> args) async {
         androidNotificationChannelId: 'com.songloft.playback',
         androidNotificationChannelName:
             l10nOrNull?.coreNotificationChannel ?? 'Songloft 播放控制',
+        androidNotificationIcon: 'drawable/ic_launcher_monochrome',
         androidNotificationOngoing: false,
         androidStopForegroundOnPause: false,
         androidBrowsableRootExtras: const {

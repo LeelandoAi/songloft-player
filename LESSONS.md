@@ -17,6 +17,7 @@
 - 证据：2026-10-14，基线 `3860205b0d8cf8449d8cf31746c254ef597c55e3` 的停止为显式 customAction，audio_service 0.18.19 的普通通知列表会排除它。本批初版额外加入标准 STOP，API 34 实际 MediaSession 出现两个 Stop；库在 Android 13+ 已会自动把标准 STOP 转为自定义 STOP，双注册多余。
 - Done right：只保留标准 STOP，旧通知有停止动作、新面板只有一个停止动作。隔离副本缺少标准动作时 4 项回归失败，修复后通过；最终 API 34/x86_64 原生播放时 Stop 数量为 1，播放中点账户退出后 PID、服务和通知归零。证据 `/tmp/songloft-520-flutter-{single-stop,final-playing,playing-exit}.json`；工作树对象见 [#520 记录](docs/cn/issue-520.md)。
 - 停止生命周期补充：真实 API 34 验收发现底层迟到 ready/completed 事件会重新发布播放态，且界面绑定使上游 `stopSelf()` 不触发销毁，前台通知/唤醒锁未释放。Dart 停止状态拒绝旧加载和完成回调；本地 audio_service 0.18.19 在 stop 中先结束前台并释放唤醒锁。停止后通知为 0、媒体失活且 startRequested=false；重新点歌可恢复。本批经验仍计一次。
+- 图标补充（2026-10-15，同一 Issue）：覆盖库图标需核对密度配置；新 APK 使用 `drawable-anydpi` 同名矢量资源，保留旧包可解析的 `audio_service_*` 名字。`aapt2 dump resources` 与 API 34 实际通知分别确认打包配置及 X 停止效果，见 [后续记录](docs/cn/issue-520.md)。契约检查覆盖默认标准控件及应用/库两处资源，不能再按 `audio_service_*` 前缀直接跳过。
 - Not run：鸿蒙 4.2 实机通知布局；API 34 不能替代该设备验收。
 - Seen 1× (2026-10-14)。状态：经验；修复提交以 Git 为准，不把模拟器结果写成真机验收。
 

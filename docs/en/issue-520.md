@@ -2,6 +2,16 @@
 
 2026-10-14. The first batch implemented only the screen-awake preference. The follow-up exit changes are recorded below; earlier validation objects remain preserved.
 
+## Follow-up: Notification Icons (2026-10-15)
+
+Following the [latest comment](https://github.com/songloft-org/songloft/issues/520#issuecomment-6182159151), update baseline `f7494d1b9dd6c1caacbf01437302b777310dc6fe` with monochrome vectors for play, pause, previous and next; the same X stop glyph as Lynx; and the existing `ic_launcher_monochrome` small icon. Preserve `audio_service_*` resource names and the standard STOP action. `drawable-anydpi` overrides the library's density-specific PNGs. The new appearance requires a complete APK; Dart hot updates on older APKs retain their existing resources. SystemUI controls icon/card colors, so identical appearance across ROMs is not claimed.
+
+- Resource contract checks now cover default standard controls, application overrides, local audio_service resources and the notification small icon; application theme attributes remain prohibited. Stop tests now mock SharedPreferences required by song-cache loading: previously the pending-source case intermittently failed with MissingPluginException, including individual/serial retries. The final 24 focused tests pass; failed logs remain preserved.
+- Linux / Flutter 3.44.8 / Dart 3.12.2: formatting, analysis, focused tests and Debug x86_64 APK compilation pass. `aapt2 dump resources` confirms `anydpi` XML for all five icons. APK SHA-256: `089784a00204a723f48e9f52282906df52a40a5bd87f7dd5b8591f887dc15274`. Full identity, commands and logs: `/tmp/songloft-520-followup/validation.json`.
+- API 34 emulator (1080×1920 / density 440): notification displays X and the monochrome app logo. Clicking X yields playing=false, inactive media, foreground=false and zero active notifications while retaining the UI. Screenshot/state: `/tmp/songloft-520-followup/notification-visible.png`, `new-playing.json`, `new-stopped.json`.
+- Exit implementation is unchanged: the previous `onTaskRemoved → AppExitController.exit` path remains. Rechecking the old package before playback and after pausing removes its process, services and notifications; removing the new package's task after notification stop also clears process/services. This does not establish HarmonyOS 4.2 task-cleanup callback behavior.
+- Not run: HarmonyOS 4.2 appearance/task removal, actual Android 12-or-earlier notification layout, Bundle/floating-lyrics exit matrix, cross-platform native builds. Delivery commits and CI/development-package results are determined by Git history and workflows for the corresponding SHA; this batch creates no new stable tag.
+
 ## Follow-up: Android Exit and Notification Stop
 
 Final delivery checks completed on 2026-10-15; investigation/implementation span October 14–15.

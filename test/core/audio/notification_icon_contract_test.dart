@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:songloft_flutter/core/audio/audio_service.dart';
 
 /// 通知栏 / 媒体控件图标的资源契约（songloft-org/songloft#329）。
 ///
@@ -16,27 +17,40 @@ import 'package:flutter_test/flutter_test.dart';
 /// 本测试静态校验第 2 类（第 1 类要真机比对 APK，只能靠"复用早已存在的资源 + 不改名"的
 /// 约定，见 audio_service.dart 里 _favoriteControl 上方注释）。
 ///
-/// 例外：`audio_service_*` 前缀的资源来自 audio_service 包的 AAR，由 Gradle 合并进
-/// APK，不在本仓库 res/ 下——跳过本地文件检查。
+/// 同时检查应用覆盖资源与本地 audio_service 资源，包含标准播放控件的默认图标。
 void main() {
-  test('audio_service.dart 引用的 androidIcon 资源存在且不含 ?attr 主题引用', () {
-    final source = File('lib/core/audio/audio_service.dart').readAsStringSync();
+  test('通知与媒体控件引用的图标资源存在且不含 ?attr 主题引用', () {
+    final source = [
+      File('lib/core/audio/audio_service.dart').readAsStringSync(),
+      File('lib/main.dart').readAsStringSync(),
+    ].join('\n');
+    final icons = {
+      ...RegExp(
+        r"android(?:Notification)?Icon:\s*'((?:drawable|mipmap)/[A-Za-z0-9_]+)'",
+      ).allMatches(source).map((m) => m.group(1)!),
+      for (final playing in [true, false])
+        for (final favorited in [true, false])
+          ...SongloftAudioHandler.buildMediaControls(
+            playing: playing,
+            favoriteSupported: true,
+            favorited: favorited,
+          ).map((c) => c.androidIcon),
+    };
     final refs =
-        RegExp(r"androidIcon:\s*'(drawable|mipmap)/([A-Za-z0-9_]+)'")
-            .allMatches(source)
-            .map((m) => (type: m.group(1)!, name: m.group(2)!))
-            .toSet();
+        icons.map((icon) {
+          final parts = icon.split('/');
+          return (type: parts[0], name: parts[1]);
+        }).toSet();
 
     expect(refs, isNotEmpty, reason: '正则没匹配到 androidIcon，改了写法就同步改这个测试');
 
     for (final ref in refs) {
-      // audio_service_* 资源来自 audio_service 包 AAR，Gradle 合并时自动打入 APK，
-      // 不在本仓库 res/ 下，跳过本地文件检查。
-      if (ref.name.startsWith('audio_service_')) continue;
-
       final candidates =
-          Directory('android/app/src/main/res')
-              .listSync()
+          [
+                Directory('android/app/src/main/res'),
+                Directory('third_party/audio_service/android/src/main/res'),
+              ]
+              .expand((root) => root.listSync())
               .whereType<Directory>()
               .where((d) => d.path.split('/').last.startsWith(ref.type))
               .expand((d) => d.listSync().whereType<File>())
@@ -51,7 +65,7 @@ void main() {
         candidates,
         isNotEmpty,
         reason:
-            '${ref.type}/${ref.name} 在 android/app/src/main/res 下找不到。通知图标必须是'
+            '${ref.type}/${ref.name} 在应用和 audio_service 的 res 下找不到。通知图标必须是'
             '本仓库里真实存在、且早已随历史 APK 落地的资源（res/ 不能热更）',
       );
 

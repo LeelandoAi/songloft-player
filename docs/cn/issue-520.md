@@ -2,6 +2,16 @@
 
 2026-10-14。最初批次只实现常亮配置；后续退出修复记录见下方，早期验证对象保留。
 
+## 后续：通知图标样式（2026-10-15）
+
+针对[最新评论](https://github.com/songloft-org/songloft/issues/520#issuecomment-6182159151)，在 `f7494d1b9dd6c1caacbf01437302b777310dc6fe` 基线上将播放、暂停、上一首、下一首改为单色矢量图标，停止按钮改为与 Lynx 相同的 X，通知小图标复用已有 `ic_launcher_monochrome`。保留 `audio_service_*` 资源名与标准 STOP 动作，使用 `drawable-anydpi` 覆盖库中的各密度 PNG。新样式需要完整 APK；旧 APK 的 Dart 热更仍使用原资源。图标及卡片颜色由 SystemUI 决定，不宣称所有 ROM 外观一致。
+
+- 资源契约检查现覆盖标准控件默认图标、应用覆盖、本地 audio_service 及通知小图标，继续禁止应用主题属性。停止测试补齐歌曲缓存所需的 SharedPreferences 测试桩：此前 pending-source 用例间歇失败并出现 MissingPluginException，单独/串行重跑也不能稳定通过；最终相关 24 项通过，失败日志保留。
+- Linux / Flutter 3.44.8 / Dart 3.12.2：格式、静态分析、相关测试及 Debug x86_64 APK 编译通过；`aapt2 dump resources` 确认五个图标包含 `anydpi` XML。APK SHA-256 `089784a00204a723f48e9f52282906df52a40a5bd87f7dd5b8591f887dc15274`。完整对象、命令及日志见 `/tmp/songloft-520-followup/validation.json`。
+- API 34 模拟器（1080×1920 / density 440）实际显示 X 与单色应用标志；点 X 后 playing=false、媒体失活、前台状态=false、活动通知=0，界面继续可用。截图及状态：`/tmp/songloft-520-followup/notification-visible.png`、`new-playing.json`、`new-stopped.json`。
+- 本次未改退出实现，仍走上一轮 `onTaskRemoved → AppExitController.exit`。旧包本轮复测播放前及暂停后划掉任务均结束进程、服务与通知；新包通知停止后划掉任务也清空进程与服务。不能据此认定鸿蒙 4.2 的任务清理回调已通过。
+- Not run：鸿蒙 4.2 真机样式/任务移除、Android 12 及以下实际通知画面、Bundle/悬浮歌词退出矩阵、跨平台原生构建。交付提交与 CI/开发包结果以 Git 历史及对应 SHA 的工作流为准；本批不另打正式版 tag。
+
 ## 后续：Android 退出与通知停止
 
 2026-10-15 完成交付检查；本批调查/实现跨 10 月 14–15 日。
