@@ -2,6 +2,24 @@
 
 此文件记录 Songloft Flutter 客户端的版本变更，仅提供中文版本。版本 tag 的 Release 发布成功后，由 CI 根据 Conventional Commits 分类追加记录并提交到 `main`；滚动 dev 记录见 [GitHub Releases](https://github.com/songloft-org/songloft-player/releases/tag/dev)。
 
+## [v2.13.3] - 2026-10-15
+### :sparkles: 新增功能
+- [`8a21e26`](https://github.com/songloft-org/songloft-player/commit/8a21e2634f2d89efae1bfeb9627b9078f98078fc) - **player**: 优化歌词可读性并新增内置配色（Ref songloft-org/songloft[#523](https://github.com/songloft-org/songloft-player/pull/523)） *(提交者 [@hanxi](https://github.com/hanxi))*
+
+### :bug: 问题修复
+- [`1a2bc0e`](https://github.com/songloft-org/songloft-player/commit/1a2bc0eab4df7bc52e9a61bcb431f2c9185a1495) - **android**: 统一通知播放控件图标样式（Ref songloft-org/songloft[#520](https://github.com/songloft-org/songloft-player/pull/520)） *(提交者 [@hanxi](https://github.com/hanxi))*
+- [`b80e03b`](https://github.com/songloft-org/songloft-player/commit/b80e03b47eefb1aaedf07d611b1d9d3c3d48257b) - **playlist**: 明确歌曲名称排序 songloft-org/songloft[#524](https://github.com/songloft-org/songloft-player/pull/524) *(提交者 [@hanxi](https://github.com/hanxi))*
+
+### :recycle: 重构
+- [`9f5fbd2`](https://github.com/songloft-org/songloft-player/commit/9f5fbd27766993da76843ee4e04ca03c73810082) - **scripts**: 发布脚本对齐统一发布契约 *(提交者 [@hanxi](https://github.com/hanxi))*
+
+### :memo: 文档更新
+- [`2bc03f7`](https://github.com/songloft-org/songloft-player/commit/2bc03f75157cc3c17aea6434af2576262137be5d) - **changelog**: 更新 v2.13.2 变更记录 *(提交者 [@github-actions[bot]](https://github.com/apps/github-actions))*
+
+### :wrench: 维护工作
+- [`4cae619`](https://github.com/songloft-org/songloft-player/commit/4cae61909da9591b1c56cfb7446b1bfea672b57a) - release version 2.13.3 *(提交者 [@hanxi](https://github.com/hanxi))*
+
+
 ## [v2.13.2] - 2026-10-14
 ### :sparkles: 新增功能
 - [`d54f746`](https://github.com/songloft-org/songloft-player/commit/d54f7463e98000853972f7f4c8e2c2a2014d3299) - **appearance**: 添加减少透明度与增强对比度设置 *(提交者 [@hanxi](https://github.com/hanxi))*
@@ -47,3 +65,4 @@
 - [`5b4c304`](https://github.com/songloft-org/songloft-player/commit/5b4c30417aef3d12e9bd1ad37376c854b1ca4f71) — 合并导航与插件设置。
 - [`17f15f1`](https://github.com/songloft-org/songloft-player/commit/17f15f18c23d098ec15a5b975eb946a892642749) — 将插件导航设置集中到插件管理页。
 [v2.13.2]: https://github.com/songloft-org/songloft-player/compare/v2.13.1...v2.13.2
+[v2.13.3]: https://github.com/songloft-org/songloft-player/compare/v2.13.2...v2.13.3
