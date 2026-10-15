@@ -38,7 +38,7 @@ class _QueueBottomSheetState extends ConsumerState<QueueBottomSheet>
     with QueueAutoScrollMixin {
   /// 队列项固定高度：封面 48 + 上下 padding 各 8 = 64。
   @override
-  double get queueItemExtent => 64;
+  double get queueItemExtent => queueRowExtent(context);
 
   /// DraggableScrollableSheet 提供的滚动控制器（切歌跟随时复用）。
   ScrollController? _sheetController;
@@ -148,32 +148,39 @@ class _QueueBottomSheetState extends ConsumerState<QueueBottomSheet>
         children: [
           const SizedBox(width: 8),
           // 标题和歌曲数量
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                AppLocalizations.of(context).playerQueueTitle,
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: colorScheme.primaryContainer,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  '${state.playlist.length}',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: colorScheme.onPrimaryContainer,
+          Expanded(
+            child: Row(
+              children: [
+                Flexible(
+                  child: Text(
+                    AppLocalizations.of(context).playerQueueTitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
-              ),
-            ],
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: colorScheme.primaryContainer,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    '${state.playlist.length}',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onPrimaryContainer,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
-          const Spacer(),
           // 清空按钮
           if (state.playlist.isNotEmpty)
             IconButton(
@@ -236,6 +243,8 @@ class _QueueBottomSheetState extends ConsumerState<QueueBottomSheet>
   ) {
     final list = ReorderableListView.builder(
       scrollController: scrollController,
+      // 固定行高使远距离定位直接计算索引，避免逐行构建中间数万首歌曲。
+      itemExtent: queueItemExtent,
       // Web 端收紧离屏预解码范围，降低队列封面 GPU 纹理累积（原生端为 null 保持默认）。
       scrollCacheExtent: webListCacheExtent,
       padding: EdgeInsets.only(

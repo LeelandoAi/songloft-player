@@ -2,6 +2,26 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:songloft_flutter/features/player/domain/use_cases/play_queue.dart';
 import 'package:songloft_flutter/shared/models/song.dart';
 
+class _CountingSong extends Song {
+  _CountingSong(int id)
+    : super(
+        id: id,
+        type: 'local',
+        title: 'Song $id',
+        duration: 180,
+        addedAt: DateTime(2026),
+        updatedAt: DateTime(2026),
+      );
+
+  static int idReads = 0;
+
+  @override
+  int get id {
+    idReads++;
+    return super.id;
+  }
+}
+
 Song _makeSong(int id, {String type = 'local'}) {
   return Song(
     id: id,
@@ -26,6 +46,38 @@ void main() {
     });
 
     group('add', () {
+      test('large queue deduplication reads each identity once', () {
+        final songs = List<Song>.generate(30000, _CountingSong.new);
+        final batch = List<Song>.generate(100, (i) => _CountingSong(29950 + i));
+        _CountingSong.idReads = 0;
+        final queue = PlayQueue(songs: songs, currentIndex: 15000).add(batch);
+        expect(_CountingSong.idReads, lessThanOrEqualTo(30100));
+        expect(queue.length, 30050);
+        expect(queue.currentIndex, 15000);
+        expect(queue.songs.last.id, 30049);
+        expect(songs.length, 30000);
+      });
+
+      test(
+        'deduplicates within a batch while retaining existing duplicates',
+        () {
+          final first = _makeSong(1);
+          final queue = PlayQueue(songs: [first, first], currentIndex: 1).add([
+            _makeSong(1),
+            _makeSong(2),
+            _makeSong(2),
+            _makeSong(2, type: 'remote'),
+          ]);
+          expect(queue.songs.map((s) => (s.id, s.type)), [
+            (1, 'local'),
+            (1, 'local'),
+            (2, 'local'),
+            (2, 'remote'),
+          ]);
+          expect(queue.currentIndex, 1);
+        },
+      );
+
       test('appends songs to empty queue', () {
         final queue = PlayQueue.empty.add([_makeSong(1), _makeSong(2)]);
 

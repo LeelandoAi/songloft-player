@@ -10,6 +10,15 @@ Include rule, scope, full owner/repo#number, failure/fix commit SHAs, actual val
 
 ## Entries
 
+### QUEUE-001: Give large queues an item extent and avoid scanning the queue for every appended song
+
+- Scope: mobile queue sheets, desktop drawers, and batch appends, songloft-org/songloft#525.
+- Evidence: on 2026-10-15, baseline `00cbe94841acca3eaf561a339f61072914c9de31` omitted item extents on both `ReorderableListView.builder` instances. Regressions against isolated old sources hit the 200-row build guard when opening the middle of a 30,000-song queue. Appending 100 songs to 30,000 caused 6,000,000 song ID reads in the old `PlayQueue.add`.
+- Rule and fix: share the same extent between layout and automatic positioning, allowing space for scaled title/artist text. Deduplicate with an `(id, type)` set while preserving existing duplicates, batch deduplication, and order.
+- Done right: opening and distant track changes each read fewer than 100 queue entries; the append regression reads at most 30,100 IDs. All 728 Flutter tests, analysis, and the embedded Web build pass. See the [#525 record](docs/en/issue-525.md) for bilingual/scaled text, drag/remove checks, and browser evidence.
+- Not run: the reporter's native Windows/Android packages and private library. Browser checks do not replace device acceptance; the candidate is not described as released.
+- Seen 1× (2026-10-15). Status: lesson; tested object is the baseline plus this fix. The task record identifies the worktree at test time; Git provides the commit SHA.
+
 ### AUDIO-001: Check SDK conversion by Android version for notification Stop
 
 - Scope: Flutter audio_service notifications and Android system media panels, songloft-org/songloft#520.

@@ -1,4 +1,30 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
+
+/// 列表布局与自动定位共用行高，放大文字时为两行文字保留空间。
+double queueRowExtent(BuildContext context, {bool compact = false}) {
+  final theme = Theme.of(context).textTheme;
+  double textHeight(TextStyle? style) {
+    final painter = TextPainter(
+      text: TextSpan(text: 'Ag中', style: style),
+      textDirection: Directionality.of(context),
+      textScaler: MediaQuery.textScalerOf(context),
+      maxLines: 1,
+    )..layout();
+    final height = painter.height;
+    painter.dispose();
+    return height;
+  }
+
+  final title = compact ? theme.bodySmall : theme.bodyMedium;
+  final artist = compact ? theme.labelSmall : theme.bodySmall;
+  final textExtent = textHeight(title) + textHeight(artist);
+  return math.max(
+    compact ? 48 : 64,
+    (textExtent + (compact ? 14 : 20)).ceilToDouble(),
+  );
+}
 
 /// 播放队列"自动定位到当前播放项"的共享滚动逻辑。
 ///

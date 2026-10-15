@@ -45,11 +45,9 @@ class PlayQueue {
     if (newSongs.isEmpty) return this;
 
     final updatedSongs = [...songs];
+    final identities = {for (final song in songs) (song.id, song.type)};
     for (final song in newSongs) {
-      final exists = updatedSongs.any(
-        (s) => s.id == song.id && s.type == song.type,
-      );
-      if (!exists) {
+      if (identities.add((song.id, song.type))) {
         updatedSongs.add(song);
       }
     }

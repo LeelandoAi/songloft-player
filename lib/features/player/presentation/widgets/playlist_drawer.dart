@@ -25,7 +25,7 @@ class _PlaylistDrawerState extends ConsumerState<PlaylistDrawer>
     with QueueAutoScrollMixin {
   /// 队列项固定高度：封面 36 + 上下 padding 各 6 = 48。
   @override
-  double get queueItemExtent => 48;
+  double get queueItemExtent => queueRowExtent(context, compact: true);
 
   final ScrollController _scrollController = ScrollController();
 
@@ -98,10 +98,14 @@ class _PlaylistDrawerState extends ConsumerState<PlaylistDrawer>
       child: Row(
         children: [
           // 标题和歌曲数量
-          Text(
-            AppLocalizations.of(context).playerQueueTitle,
-            style: theme.textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.bold,
+          Flexible(
+            child: Text(
+              AppLocalizations.of(context).playerQueueTitle,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
           const SizedBox(width: 8),
@@ -182,6 +186,7 @@ class _PlaylistDrawerState extends ConsumerState<PlaylistDrawer>
   ) {
     return ReorderableListView.builder(
       scrollController: _scrollController,
+      itemExtent: queueItemExtent,
       // Web 端收紧离屏预解码范围，降低队列封面 GPU 纹理累积（原生端为 null 保持默认）。
       scrollCacheExtent: webListCacheExtent,
       padding: const EdgeInsets.only(bottom: 16),
