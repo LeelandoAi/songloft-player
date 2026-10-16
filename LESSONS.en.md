@@ -10,6 +10,13 @@ Include rule, scope, full owner/repo#number, failure/fix commit SHAs, actual val
 
 ## Entries
 
+### LYRIC-002: Check effective accessibility settings before diagnosing cover tinting
+
+- Scope: Flutter full-screen player; songloft-org/songloft#523 feedback on 2026-10-16.
+- Evidence: the actual color function at baseline `bb03a5c49eb6701d90a73b924ed12ec388c6560c` deliberately returns a solid background with increased contrast; the old switch description omitted the cover-background effect. Visible artwork without a gradient does not establish extraction failure; the app toggle alone does not account for system high contrast.
+- Done right: preserve the accessibility policy and clarify the switch in three languages. Actual-function comparisons and validation boundaries are in the [#523 follow-up record](docs/en/issue-523.md). The reporter's device settings remain unconfirmed; no proven device cause is claimed.
+- Seen 1× (2026-10-16). Status: lesson; copy was uncommitted during validation, with final validation objects in the task record.
+
 ### QUEUE-001: Give large queues an item extent and avoid scanning the queue for every appended song
 
 - Scope: mobile queue sheets, desktop drawers, and batch appends, songloft-org/songloft#525.

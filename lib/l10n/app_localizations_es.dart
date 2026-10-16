@@ -275,7 +275,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get appearanceIncreaseContrastDescription =>
-      'Mejorar el contraste del texto y los controles. Siempre activo si el sistema tiene el contraste alto activado.';
+      'Mejorar el contraste del texto y los controles. El reproductor usa un fondo liso en lugar de los colores de la portada. Siempre activo si el sistema tiene el contraste alto activado.';
 
   @override
   String get themeModeTitle => 'Modo de tema';

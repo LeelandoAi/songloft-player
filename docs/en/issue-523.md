@@ -2,6 +2,18 @@
 
 2026-10-15, related to [songloft-org/songloft#523](https://github.com/songloft-org/songloft/issues/523). This batch updates the Flutter mobile and desktop full players and appearance settings.
 
+## 2026-10-16 · Solid Background Feedback
+
+Delivery authorization: on 2026-10-16 the user authorized this batch's commits, pushes and a reply to songloft-org/songloft#523. Uncommitted/unposted states below are validation snapshots; Git/GitHub records for the same SHA determine final commits, CI and the comment. No stable tag or Issue closure.
+
+For the [follow-up comment](https://github.com/songloft-org/songloft/issues/523#issuecomment-6210432894), checked current `bb03a5c49eb6701d90a73b924ed12ec388c6560c`: increased contrast deliberately uses a solid surface in the player. App and system high contrast combine with OR; disabling the app toggle cannot override the system. Flutter's Reduce Transparency affects glass materials and does not independently disable this cover-tinted gradient.
+
+A temporary Flutter test runs the actual `AppTheme` and `PlayerBackdropColors`, confirming a cover tint in normal mode and a solid background with increased contrast. The screenshots are consistent with the accessibility path, but the reporter's settings, installed versions and native Flutter behavior remain unconfirmed; this does not establish their device's cause or a functional fix.
+
+This change only clarifies the contrast description in Chinese, English and Spanish, including generated localizations, while preserving the existing policy. Evidence: `/tmp/songloft-523-followup/`, with final validation objects, commands and results in `validation.json`. Copy changes add no regression tests; old-implementation failure checks are inapplicable. Not run: native devices, outdoor use and the reporter's library. No commit, push, release or Issue reply.
+
+Validation: Linux amd64 / Flutter 3.44.8 / Dart 3.12.2; formatting, analysis, 19 relevant tests, embedded Web and Go embedding builds pass. Docker Chrome displays both Chinese and English switch descriptions without page exceptions. The first test command named two nonexistent files; the corrected command passes all 19 tests, and the original failure is retained in the evidence directory.
+
 ## Behavior and Cause
 
 - The original full-player background combined cover art, darkMutedColor, theme gradients, and a black top overlay, while lyrics directly used the theme primary. Light-mode backgrounds became dark without coordinated foreground colors. Translations and romaji further reduced contrast with extra opacity.

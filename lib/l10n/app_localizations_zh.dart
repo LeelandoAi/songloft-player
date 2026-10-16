@@ -257,7 +257,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get appearanceIncreaseContrastDescription =>
-      '提高文字和控件对比度。系统高对比度开启时始终生效。';
+      '提高文字和控件对比度，播放器使用纯色背景，不随封面变化。系统高对比度开启时始终生效。';
 
   @override
   String get themeModeTitle => '主题模式';

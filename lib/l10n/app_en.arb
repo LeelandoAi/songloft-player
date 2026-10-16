@@ -83,7 +83,7 @@
   "appearanceReduceTransparency": "Reduce transparency",
   "appearanceReduceTransparencyDescription": "Use opaque backgrounds and disable glass blur. Saved on this device only.",
   "appearanceIncreaseContrast": "Increase contrast",
-  "appearanceIncreaseContrastDescription": "Improve text and control contrast. Always active when system high contrast is enabled.",
+  "appearanceIncreaseContrastDescription": "Improve text and control contrast. The player uses a solid background instead of cover colors. Always active when system high contrast is enabled.",
   "themeModeTitle": "Theme mode",
   "themeModeSubtitle": "Choose the app appearance",
   "themeLight": "Light",

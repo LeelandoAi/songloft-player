@@ -273,7 +273,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get appearanceIncreaseContrastDescription =>
-      'Improve text and control contrast. Always active when system high contrast is enabled.';
+      'Improve text and control contrast. The player uses a solid background instead of cover colors. Always active when system high contrast is enabled.';
 
   @override
   String get themeModeTitle => 'Theme mode';

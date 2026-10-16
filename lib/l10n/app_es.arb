@@ -109,7 +109,7 @@
   "appearanceReduceTransparency": "Reducir transparencia",
   "appearanceReduceTransparencyDescription": "Usar fondos opacos y desactivar el desenfoque del cristal. Se guarda solo en este dispositivo.",
   "appearanceIncreaseContrast": "Aumentar contraste",
-  "appearanceIncreaseContrastDescription": "Mejorar el contraste del texto y los controles. Siempre activo si el sistema tiene el contraste alto activado.",
+  "appearanceIncreaseContrastDescription": "Mejorar el contraste del texto y los controles. El reproductor usa un fondo liso en lugar de los colores de la portada. Siempre activo si el sistema tiene el contraste alto activado.",
   "themeModeTitle": "Modo de tema",
   "themeModeSubtitle": "Elige la apariencia de la app",
   "themeLight": "Claro",

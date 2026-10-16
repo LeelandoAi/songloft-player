@@ -2,6 +2,18 @@
 
 2026-10-15，关联 [songloft-org/songloft#523](https://github.com/songloft-org/songloft/issues/523)。本批修改 Flutter 手机与桌面全屏播放器及外观设置。
 
+## 2026-10-16 · 纯色背景反馈
+
+交付授权：用户已于 2026-10-16 授权本批提交、推送及回复 songloft-org/songloft#523。下文未提交/未回复状态为验证阶段快照；最终提交、CI 与评论以 Git/GitHub 同一 SHA 的记录为准，不打正式版 tag、不关闭 Issue。
+
+针对[后续评论](https://github.com/songloft-org/songloft/issues/523#issuecomment-6210432894)，核对当前 `bb03a5c49eb6701d90a73b924ed12ec388c6560c`：增强对比度会主动将播放器背景设为纯色 surface；应用开关与系统高对比度按 OR 合并，应用开关关闭不能覆盖系统设置。Flutter 的「减少透明度」只影响玻璃材质，不会单独停用这里的取色渐变。
+
+临时 Flutter 测试直接运行实际 `AppTheme` 与 `PlayerBackdropColors`，确认有封面时普通模式仍取色，增强对比度时使用纯色。反馈截图与无障碍纯色路径吻合，但报告人的开关状态、实际安装版本及 Flutter 原生表现尚未确认，不能认定设备根因或宣称功能已经修好。
+
+本次仅补充中/英/西班牙语增强对比度说明及生成物，明确纯色背景不会随封面变化；保留既有策略。证据目录 `/tmp/songloft-523-followup/`，最终验证对象、命令和结果见 `validation.json`。文案修改不新增回归测试，旧实现失败验证不适用。Not run：原生设备、户外与报告人曲库；未提交、推送、发布或回复 Issue。
+
+本批验证：Linux amd64 / Flutter 3.44.8 / Dart 3.12.2；格式、静态分析、19 项相关测试、嵌入 Web 与 Go 嵌入构建通过；Docker Chrome 实际显示中英文开关说明，无页面异常。首次测试命令误写两条不存在的路径，修正后上述 19 项通过，原失败保留在证据目录。
+
 ## 行为与原因
 
 - 原全屏背景把封面、darkMutedColor、主题渐变及黑色顶部遮罩叠加，歌词却仍直接使用主题 primary；亮色模式背景被压暗，歌词与背景没有协同计算。译文和罗马音额外降低透明度，进一步降低对比度。
